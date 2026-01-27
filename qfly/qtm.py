@@ -21,7 +21,7 @@ class QtmWrapper(Thread):
     3) pass a callback function to its QtmWrapper which responds to pose data.
     """
 
-    def __init__(self, body, on_pose, qtm_ip="127.0.0.1"):
+    def __init__(self, body, on_pose, qtm_ip="192.168.1.122"):
         """
         Construct QtmWrapper object
 

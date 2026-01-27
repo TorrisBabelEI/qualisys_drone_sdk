@@ -13,9 +13,10 @@ from qfly import Pose, QualisysCrazyflie, World, utils
 
 
 # SETTINGS
-cf_body_name = 'Crazyflie'  # QTM rigid body name
-cf_uri = 'radio://0/80/2M/E7E7E7E7E7'  # Crazyflie address
+cf_body_name = 'cf_01'  # QTM rigid body name
+cf_uri = 'radio://0/80/2M/E7E7E7E700'  # Crazyflie address
 cf_marker_ids = [1, 2, 3, 4] # Active marker IDs
+mocap_ip = "192.168.1.122"
 circle_radius = 0.5 # Radius of the circular flight path
 circle_speed_factor = 0.12 # How fast the Crazyflie should move along circle
 
@@ -46,7 +47,8 @@ world = World()
 with QualisysCrazyflie(cf_body_name,
                        cf_uri,
                        world,
-                       marker_ids=cf_marker_ids) as qcf:
+                       marker_ids=cf_marker_ids,
+                       qtm_ip=mocap_ip) as qcf:
 
     # Let there be time
     t = time()

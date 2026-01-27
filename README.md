@@ -114,3 +114,27 @@ To re-generate the documentation files and place them correctly into the `docs/`
     del docs\*.html
     pdoc qfly --force --html --output-dir docs
     move .\docs\qfly\* .\docs\
+
+
+# Notice of Bug
+
+The current version of `cflib` doesn't have entry `xyVelMax` in `posCtlPid`. One need to locate the position where `qfly` was installed and change the corresponding fields into separate value assignments in `crazyflie.py`:
+
+```
+    def set_speed_limit(self, speed_limit):
+        """
+        Sets speed in horizontal (xy) and vertical (z) dimensions.
+
+        Parameters
+        ----------
+        speed_limit : float
+            Speed limit.
+            (Unit: m/s)
+        """
+        print(f'[{self.cf_body_name}@{self.cf_uri}] Speed limit: {speed_limit} m/s')
+        self.cf.param.set_value('posCtlPid.xVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.yVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.zVelMax', speed_limit)
+```
+
+There are two occurances.

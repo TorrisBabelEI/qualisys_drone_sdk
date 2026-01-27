@@ -27,7 +27,7 @@ class QualisysDeck(Thread):
                  cf_body_name,
                  cf_uri,
                  marker_ids=[1, 2, 3, 4],
-                 qtm_ip="127.0.0.1"):
+                 qtm_ip="192.168.1.122"):
         """
         Construct QualisysDeck object
 

@@ -18,7 +18,7 @@ class QualisysTraqr(Thread):
 
     def __init__(self,
                  traqr_body_name,
-                 qtm_ip="127.0.0.1"):
+                 qtm_ip="192.168.1.122"):
         """
         Construct QualisysTraqr object
 

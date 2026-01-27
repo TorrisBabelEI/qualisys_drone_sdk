@@ -33,7 +33,7 @@ class QualisysCrazyflie(Thread):
                  cf_uri,
                  world,
                  marker_ids=[1, 2, 3, 4],
-                 qtm_ip="127.0.0.1"):
+                 qtm_ip="192.168.1.122"):
         """
         Construct QualisysCrazyflie object.
 
@@ -323,7 +323,8 @@ class QualisysCrazyflie(Thread):
             (Unit: m/s)
         """
         print(f'[{self.cf_body_name}@{self.cf_uri}] Speed limit: {speed_limit} m/s')
-        self.cf.param.set_value('posCtlPid.xyVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.xVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.yVelMax', speed_limit)
         self.cf.param.set_value('posCtlPid.zVelMax', speed_limit)
 
     def setup(self):
@@ -410,7 +411,8 @@ class QualisysCrazyflie(Thread):
             Limit for horizontal (xy) and vertical (z) speed. (unit: m/s)
         """
         print(f'[{self.cf_body_name}@{self.cf_uri}] Speed limit: {speed_limit} m/s')
-        self.cf.param.set_value('posCtlPid.xyVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.xVelMax', speed_limit)
+        self.cf.param.set_value('posCtlPid.yVelMax', speed_limit)
         self.cf.param.set_value('posCtlPid.zVelMax', speed_limit)
 
     def _set_pose(self, pose):
