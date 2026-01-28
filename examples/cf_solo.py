@@ -16,7 +16,7 @@ import json
 # Select required crazyflie index
 cf_idx = 1
 
-cf_json = f'../config_crazyflie_{cf_idx}.json'
+cf_json = f'config_crazyflie_{cf_idx}.json'
 with open(cf_json, 'r') as cfg:
     cf_specs = json.load(cfg)
 
