@@ -11,12 +11,20 @@ from time import sleep, time
 
 from qfly import Pose, QualisysCrazyflie, World, utils
 
+import json
+
+# Select required crazyflie index
+cf_idx = 1
+
+cf_json = f'../config_crazyflie_{cf_idx}.json'
+with open(cf_json, 'r') as cfg:
+    cf_specs = json.load(cfg)
 
 # SETTINGS
-cf_body_name = 'cf_01'  # QTM rigid body name
-cf_uri = 'radio://0/80/2M/E7E7E7E700'  # Crazyflie address
+cf_body_name = cf_specs["NAME_SINGLE_BODY"]  # QTM rigid body name
+cf_uri = cf_specs["URI"]  # Crazyflie address
 cf_marker_ids = [1, 2, 3, 4] # Active marker IDs
-mocap_ip = "192.168.1.122"
+mocap_ip = cf_specs["QUALISYS_IP"]  # IP address for QTM capture data
 circle_radius = 0.5 # Radius of the circular flight path
 circle_speed_factor = 0.12 # How fast the Crazyflie should move along circle
 

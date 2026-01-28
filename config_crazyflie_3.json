@@ -1,0 +1,12 @@
+{
+    "QUALISYS_IP": "192.168.1.122",
+    "DEFAULT_QUALISYS_IP": "127.0.0.1",
+    "NAME_SINGLE_BODY": "cf_03",
+    "URI": "radio://0/82/2M/0xE7E7E7E702",
+
+
+    "FLAG_DELETE_CSV_BEGIN": 0,
+    "FLAG_PLOT": 1,
+    "DIRECTORY_SYSID": "/sysid_data/",
+    "DIRECTORY_TRAJ": "/traj_csv_files/"
+}
