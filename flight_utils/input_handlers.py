@@ -1,4 +1,5 @@
-"""Input device handlers: keyboard and joystick (optional).
+"""
+Input device handlers: keyboard and joystick (optional).
 
 Provides lightweight controllers that expose a get_direction() method
 returning an (dx, dy) unit vector (or (0,0) when idle).
