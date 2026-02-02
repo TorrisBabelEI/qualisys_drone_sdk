@@ -2,19 +2,12 @@
 
 Provides lightweight controllers that expose a get_direction() method
 returning an (dx, dy) unit vector (or (0,0) when idle).
-
-Keyboard support imports `pynput` lazily inside `KeyboardController.__init__` so
-that environments without GUI/permissions or without `pynput` installed can still
-import this module when only joystick/other functionality is needed.
 """
 
 
 class KeyboardController:
-    """Maintain currently pressed arrow keys and expose direction.
-
-    This class performs a lazy import of `pynput` in `__init__` and will raise
-    `RuntimeError` if `pynput` is not available. This avoids import-time failures
-    in environments that do not have keyboard support.
+    """
+    Maintain currently pressed arrow keys and expose direction.
     """
 
     def __init__(self):
