@@ -37,7 +37,7 @@ from flight_utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
 from flight_utils.visualization import plot_all_results
 
 # --- Configuration for manual control ---
-# 'keyboard' | 'joystick' | 'mouse' (mouse treated as keyboard)
+# Supported devices: 'keyboard' | 'joystick'
 INPUT_DEVICE = 'keyboard'
 MAX_FLIGHT_TIME = 100  # seconds from hover start
 MOVEMENT_STEP = 0.002  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
@@ -124,7 +124,7 @@ with QualisysCrazyflie(cf_body_name,
     # Initialize input controller
     controller = None
     try:
-        if INPUT_DEVICE == 'keyboard' or INPUT_DEVICE == 'mouse':
+        if INPUT_DEVICE == 'keyboard':
             controller = KeyboardController()
             controller.start()
         elif INPUT_DEVICE == 'joystick':
