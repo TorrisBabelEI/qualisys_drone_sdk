@@ -2,27 +2,41 @@
 
 Provides lightweight controllers that expose a get_direction() method
 returning an (dx, dy) unit vector (or (0,0) when idle).
+
+Keyboard support imports `pynput` lazily inside `KeyboardController.__init__` so
+that environments without GUI/permissions or without `pynput` installed can still
+import this module when only joystick/other functionality is needed.
 """
-from pynput.keyboard import Key, Listener
 
 
 class KeyboardController:
-    """Maintain currently pressed arrow keys and expose direction."""
+    """Maintain currently pressed arrow keys and expose direction.
+
+    This class performs a lazy import of `pynput` in `__init__` and will raise
+    `RuntimeError` if `pynput` is not available. This avoids import-time failures
+    in environments that do not have keyboard support.
+    """
 
     def __init__(self):
+        try:
+            from pynput.keyboard import Key, Listener
+        except Exception as e:
+            raise RuntimeError(f"KeyboardController requires 'pynput' package: {e}")
+
+        self.Key = Key
         self._pressed = set()
         self._listener = Listener(on_press=self._on_press, on_release=self._on_release)
 
     def _on_press(self, key):
         try:
-            if key in (Key.up, Key.down, Key.left, Key.right):
+            if key in (self.Key.up, self.Key.down, self.Key.left, self.Key.right):
                 self._pressed.add(key)
         except Exception:
             pass
 
     def _on_release(self, key):
         try:
-            if key in (Key.up, Key.down, Key.left, Key.right):
+            if key in (self.Key.up, self.Key.down, self.Key.left, self.Key.right):
                 self._pressed.discard(key)
         except Exception:
             pass
@@ -40,13 +54,13 @@ class KeyboardController:
         """Return (dx, dy) where dx/dy are in [-1, 1]."""
         dx = 0
         dy = 0
-        if Key.right in self._pressed:
+        if self.Key.right in self._pressed:
             dx += 1
-        if Key.left in self._pressed:
+        if self.Key.left in self._pressed:
             dx -= 1
-        if Key.up in self._pressed:
+        if self.Key.up in self._pressed:
             dy += 1
-        if Key.down in self._pressed:
+        if self.Key.down in self._pressed:
             dy -= 1
 
         if dx == 0 and dy == 0:
