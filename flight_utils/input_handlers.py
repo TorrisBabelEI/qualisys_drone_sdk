@@ -18,10 +18,7 @@ class KeyboardController:
     """
 
     def __init__(self):
-        try:
-            from pynput.keyboard import Key, Listener
-        except Exception as e:
-            raise RuntimeError(f"KeyboardController requires 'pynput' package: {e}")
+        from pynput.keyboard import Key, Listener
 
         self.Key = Key
         self._pressed = set()
