@@ -25,13 +25,13 @@ from qfly import Pose, QualisysCrazyflie, World, utils
 import json
 import numpy as np
 
-# Input and realtime visualization helpers
-from flight_utils.input_handlers import KeyboardController, JoystickController
-from flight_utils.realtime_visualization import RealtimePlot
-
 # Add utils to path for custom modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# Input and realtime visualization helpers
+from flight_utils.input_handlers import KeyboardController, JoystickController
+from flight_utils.realtime_visualization import RealtimePlot
+from flight_utils.bounds import clamp_xy
 from flight_utils.trajectory_utils import load_trajectory, scale_trajectory_time, interpolate_position, get_trajectory_reference
 from flight_utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
 from flight_utils.visualization import plot_all_results
@@ -149,26 +149,87 @@ with QualisysCrazyflie(cf_body_name,
         print(f"Failed to initialize realtime plot: {e}")
         plot = None
 
-    # TAKEOFF -> hover at safe expanse
-    hover_target = Pose(world.origin.x, world.origin.y, world.expanse)
+    # TAKEOFF -> determine hover target based on current position if available
+    initial_hover_xy = None
+    hover_target = None
     print("Taking off and ascending to hover altitude...")
     takeoff_start = time()
     takeoff_timeout = 12.0  # seconds
     while time() - takeoff_start < takeoff_timeout:
-        qcf.safe_position_setpoint(hover_target)
+        # If we have a current pose and haven't set hover xy, capture it as the hover target
+        if qcf.pose is not None and initial_hover_xy is None:
+            try:
+                raw_x = float(qcf.pose.x)
+                raw_y = float(qcf.pose.y)
+                # If the current pose is outside lab limits, abort for safety
+                xmin, xmax = lab_xlim
+                ymin, ymax = lab_ylim
+                if not (xmin <= raw_x <= xmax and ymin <= raw_y <= ymax):
+                    print(f"Initial pose (x={raw_x:.3f}, y={raw_y:.3f}) outside lab limits {lab_xlim, lab_ylim}. Aborting and landing for safety.")
+                    # immediate landing
+                    while qcf.pose is not None and qcf.pose.z > 0.1:
+                        qcf.land_in_place()
+                        sleep(0.01)
+                    print("Landed. Exiting.")
+                    sys.exit(1)
+
+                # Accept initial position as hover target (already checked within lab limits)
+                x0, y0 = raw_x, raw_y
+                initial_hover_xy = (x0, y0)
+                hover_target = Pose(x0, y0, world.expanse)
+            except Exception:
+                initial_hover_xy = None
+
+        # While waiting for a valid current pose, do NOT fallback to world origin (avoid overshoot).
+        # Only send a setpoint when we have a concrete hover_target (derived from real pose).
+        if hover_target is not None:
+            qcf.safe_position_setpoint(hover_target)
+
         sleep(0.02)
-        if qcf.pose is not None and qcf.pose.z > min(0.4, world.expanse * 0.5):
+        if qcf.pose is not None and qcf.pose.z > min(0.4, world.expanse * 0.5) and hover_target is not None:
             break
 
-    # Wait a short moment for stable hover
+    # If after timeout we still don't have a valid hover target, abort for safety
+    if hover_target is None:
+        print(f"Failed to obtain a valid initial pose within {takeoff_timeout} seconds. Aborting and landing for safety.")
+        try:
+            while qcf.pose is not None and qcf.pose.z > 0.1:
+                qcf.land_in_place()
+                sleep(0.01)
+        except Exception:
+            pass
+        sys.exit(1)
+
+    # Wait a short moment for stable hover and ensure hover remains within lab limits
     stable_start = time()
     while time() - stable_start < 1.0:
+        # Update hover target if we have a more accurate current pose
+        if qcf.pose is not None:
+            try:
+                raw_x = float(qcf.pose.x)
+                raw_y = float(qcf.pose.y)
+                # If pose drifts outside lab limits, abort immediately
+                xmin, xmax = lab_xlim
+                ymin, ymax = lab_ylim
+                if not (xmin <= raw_x <= xmax and ymin <= raw_y <= ymax):
+                    print(f"Pose drifted outside lab limits during stabilization (x={raw_x:.3f}, y={raw_y:.3f}). Landing for safety.")
+                    while qcf.pose is not None and qcf.pose.z > 0.1:
+                        qcf.land_in_place()
+                        sleep(0.01)
+                    print("Landed. Exiting.")
+                    sys.exit(1)
+
+                # Use current position directly (already verified inside lab limits)
+                x0, y0 = raw_x, raw_y
+                hover_target = Pose(x0, y0, world.expanse)
+            except Exception:
+                pass
         qcf.safe_position_setpoint(hover_target)
         sleep(0.02)
 
     # Start control timer from now
     hover_start_time = time()
-    print(f"Hover achieved. Controls enabled (device={INPUT_DEVICE}). Max flight time: {MAX_FLIGHT_TIME}s")
+    print(f"Hover achieved at x={hover_target.x:.3f}, y={hover_target.y:.3f}. Controls enabled (device={INPUT_DEVICE}). Max flight time: {MAX_FLIGHT_TIME}s")
 
     # MAIN CONTROL LOOP
     last_progress_print = 0
