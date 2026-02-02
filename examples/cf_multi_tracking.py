@@ -25,9 +25,9 @@ import numpy as np
 # Add utils to path for custom modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from utils.trajectory_utils import load_trajectory, scale_trajectory_time, interpolate_position, get_trajectory_reference
-from utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
-from utils.visualization import plot_all_results
+from flight_utils.trajectory_utils import load_trajectory, scale_trajectory_time, interpolate_position, get_trajectory_reference
+from flight_utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
+from flight_utils.visualization import plot_all_results
 
 # SETTINGS
 # List of Crazyflie indices to control
