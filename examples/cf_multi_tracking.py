@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from flight_utils.trajectory_utils import load_trajectory, scale_trajectory_time, interpolate_position, get_trajectory_reference
 from flight_utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
 from flight_utils.visualization import plot_all_results
+from flight_utils.realtime_visualization import RealtimePlot
 
 # SETTINGS
 # List of Crazyflie indices to control
@@ -128,12 +129,7 @@ with ParallelContexts(*_qcfs) as qcfs:
     print("Press ESC to land at any time.")
 
     # Initialize realtime plot for first drone
-    try:
-        plot = RealtimePlot(None, lab_xlim=lab_xlim, lab_ylim=lab_ylim)
-        plot.set_instructions('Multi-tracking | Shows drone 0 position')
-    except Exception as e:
-        print(f'Realtime plot unavailable: {e}')
-        plot = None
+    plot = None
 
     # MAIN LOOP WITH SAFETY CHECK
     while fly and all(qcf.is_safe() for qcf in qcfs):

@@ -1,15 +1,12 @@
 """
-Solo Crazyflie Trajectory Tracking
+Solo Crazyflie Remote Control
 
-This script makes a Crazyflie follow a trajectory defined in a CSV file.
-The CSV file should have 7 rows:
-  - Row 1: Time in seconds (actual time, with physical meaning)
-  - Rows 2-4: X, Y, Z positions
-  - Rows 5-7: VX, VY, VZ velocities (not used for tracking)
+This script allows manual control of a Crazyflie using keyboard or joystick input.
+The drone will take off to hover altitude and then respond to user input commands.
 
-The trajectory will be checked to ensure average speed does not exceed
-the drone's speed limit. The flight_time parameter can be used to scale
-the trajectory execution time.
+Controls:
+- Arrow keys (keyboard) or joystick to move in XY plane
+- ESC to land at any time
 
 ESC to land at any time.
 """
@@ -142,7 +139,7 @@ with QualisysCrazyflie(cf_body_name,
         # Show operation instructions on plot
         instr = (
             f"Device: {INPUT_DEVICE} | Arrows/Joystick to move | ESC to land | Max {MAX_FLIGHT_TIME}s\n"
-            "Move step: {MOVEMENT_STEP} m per tick"
+            f"Move step: {MOVEMENT_STEP} m per tick"
         )
         plot.set_instructions(instr)
     except Exception as e:
