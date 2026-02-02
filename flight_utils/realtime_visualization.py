@@ -4,32 +4,56 @@ import matplotlib.pyplot as plt
 
 
 class RealtimePlot:
-    def __init__(self, pos_ref=None, window_size=5.0):
-        """pos_ref: (3, N) numpy array of reference positions"""
+    def __init__(self, pos_ref=None, lab_xlim=None, lab_ylim=None, window_size=5.0):
+        """pos_ref: (3, N) numpy array of reference positions
+
+        lab_xlim: (xmin, xmax), lab_ylim: (ymin, ymax) to fix axes.
+        """
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(6, 6))
         self.pos_ref = pos_ref
+        self.lab_xlim = lab_xlim
+        self.lab_ylim = lab_ylim
+
         if pos_ref is not None and pos_ref.shape[1] > 0:
             xs = pos_ref[0, :]
             ys = pos_ref[1, :]
             self.ax.plot(xs, ys, '-', color='gray', alpha=0.6, label='reference')
-            margin = max(np.ptp(xs), np.ptp(ys), 0.5) * 0.5 + 0.1
-            cx = np.mean(xs)
-            cy = np.mean(ys)
-            self.ax.set_xlim(cx - margin, cx + margin)
-            self.ax.set_ylim(cy - margin, cy + margin)
+            if lab_xlim is None or lab_ylim is None:
+                margin = max(np.ptp(xs), np.ptp(ys), 0.5) * 0.5 + 0.1
+                cx = np.mean(xs)
+                cy = np.mean(ys)
+                self.ax.set_xlim(cx - margin, cx + margin)
+                self.ax.set_ylim(cy - margin, cy + margin)
         else:
-            self.ax.set_xlim(-1, 1)
-            self.ax.set_ylim(-1, 1)
+            if lab_xlim is None or lab_ylim is None:
+                self.ax.set_xlim(-1, 1)
+                self.ax.set_ylim(-1, 1)
+
+        # Apply explicit lab limits if provided
+        if self.lab_xlim is not None:
+            self.ax.set_xlim(self.lab_xlim)
+        if self.lab_ylim is not None:
+            self.ax.set_ylim(self.lab_ylim)
 
         self.current_dot, = self.ax.plot([], [], 'ro', label='drone')
         self.text = self.ax.text(0.02, 0.95, '', transform=self.ax.transAxes)
+        self.instr_text = self.ax.text(0.02, 0.02, '', transform=self.ax.transAxes, fontsize=8)
         self.ax.set_xlabel('X (m)')
         self.ax.set_ylabel('Y (m)')
         self.ax.set_title('Real-time Trajectory & Position')
         self.ax.legend(loc='upper right')
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+
+    def set_instructions(self, instr: str):
+        """Set a static instruction/help text to display on the plot."""
+        try:
+            self.instr_text.set_text(instr)
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
+        except Exception:
+            pass
 
     def update(self, pos, info=None):
         """Update current drone position. pos is (x, y, z) or array-like."""

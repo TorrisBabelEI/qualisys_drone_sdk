@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from flight_utils.trajectory_utils import load_trajectory, scale_trajectory_time, interpolate_position, get_trajectory_reference
 from flight_utils.flight_data import FlightDataRecorder, FlightDataAnalyzer
 from flight_utils.visualization import plot_all_results
+from flight_utils.realtime_visualization import RealtimePlot
 
 # Select required crazyflie index
 cf_idx = 1
@@ -48,6 +49,10 @@ traj_file_name = 'cf_solo_trajectory.csv'  # Trajectory file name (will be loade
 flight_time = 60  # Total flight time in seconds (can be different from trajectory original time)
 save_flag = False  # Whether to save flight data to CSV
 safety_margin = 0.8  # Safety margin for speed check (use 80% of speed limit)
+
+# Lab limits (x_min, x_max), (y_min, y_max)
+lab_xlim = (-2.4, 2.4)
+lab_ylim = (-1.8, 1.6)
 
 
 # Watch key presses with a global variable
@@ -89,6 +94,14 @@ except Exception as e:
 
 # Initialize data recorder
 recorder = FlightDataRecorder(cf_idx)
+
+# Initialize realtime plot (optional)
+try:
+    plot = RealtimePlot(pos_ref, lab_xlim=lab_xlim, lab_ylim=lab_ylim)
+    plot.set_instructions('Tracking mode | No input control | ESC to abort')
+except Exception as e:
+    print(f"Realtime plot unavailable: {e}")
+    plot = None
 
 
 # Prepare for liftoff
@@ -139,6 +152,13 @@ with QualisysCrazyflie(cf_body_name,
 
         # Record data for analysis
         recorder.record_state(dt, current_pose, desired_pos)
+
+        # Update realtime plot
+        if plot is not None and current_pose is not None:
+            try:
+                plot.update([current_pose.x, current_pose.y, current_pose.z], info=f't={dt:.1f}s')
+            except Exception:
+                pass
 
         # Print progress every 1 second
         if int(dt) % 1 == 0 and dt > 0:

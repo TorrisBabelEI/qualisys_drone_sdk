@@ -62,6 +62,10 @@ flight_time = 60  # Total flight time in seconds (can be different from trajecto
 save_flag = False  # Whether to save flight data to CSV
 safety_margin = 0.8  # Safety margin for speed check (use 80% of speed limit)
 
+# Lab limits (x_min, x_max), (y_min, y_max)
+lab_xlim = (-2.4, 2.4)
+lab_ylim = (-1.8, 1.6)
+
 
 # Watch key presses with a global variable
 last_key_pressed = None
@@ -134,7 +138,13 @@ with QualisysCrazyflie(cf_body_name,
 
     # Initialize realtime plot
     try:
-        plot = RealtimePlot(pos_ref)
+        plot = RealtimePlot(pos_ref, lab_xlim=lab_xlim, lab_ylim=lab_ylim)
+        # Show operation instructions on plot
+        instr = (
+            f"Device: {INPUT_DEVICE} | Arrows/Joystick to move | ESC to land | Max {MAX_FLIGHT_TIME}s\n"
+            "Move step: {MOVEMENT_STEP} m per tick"
+        )
+        plot.set_instructions(instr)
     except Exception as e:
         print(f"Failed to initialize realtime plot: {e}")
         plot = None
@@ -188,18 +198,25 @@ with QualisysCrazyflie(cf_body_name,
 
         # Update hover target position based on inputs (XY only)
         if dx != 0.0 or dy != 0.0:
+            new_x = hover_target.x + dx
+            new_y = hover_target.y + dy
+            try:
+                from flight_utils.bounds import clamp_xy
+                new_x, new_y = clamp_xy(new_x, new_y, lab_xlim, lab_ylim)
+            except Exception:
+                # Fallback to world bounds if clamp not available
+                xmin = world.origin.x - world.expanse
+                xmax = world.origin.x + world.expanse
+                ymin = world.origin.y - world.expanse
+                ymax = world.origin.y + world.expanse
+                new_x = min(max(new_x, xmin), xmax)
+                new_y = min(max(new_y, ymin), ymax)
+
             hover_target = Pose(
-                hover_target.x + dx,
-                hover_target.y + dy,
+                new_x,
+                new_y,
                 hover_target.z,
             )
-            # Clamp to world bounds
-            xmin = world.origin.x - world.expanse
-            xmax = world.origin.x + world.expanse
-            ymin = world.origin.y - world.expanse
-            ymax = world.origin.y + world.expanse
-            hover_target.x = min(max(hover_target.x, xmin), xmax)
-            hover_target.y = min(max(hover_target.y, ymin), ymax)
 
         # Send setpoint
         qcf.safe_position_setpoint(hover_target)

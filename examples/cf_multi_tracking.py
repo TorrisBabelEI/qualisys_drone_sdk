@@ -63,6 +63,10 @@ flight_time = 60  # Total flight time in seconds
 save_flag = False  # Whether to save flight data
 safety_margin = 0.8  # Safety margin for speed check
 
+# Lab limits (x_min, x_max), (y_min, y_max)
+lab_xlim = (-2.4, 2.4)
+lab_ylim = (-1.8, 1.6)
+
 
 # Watch key presses with a global variable
 last_key_pressed = None
@@ -123,6 +127,14 @@ with ParallelContexts(*_qcfs) as qcfs:
     print("Beginning trajectory tracking...")
     print("Press ESC to land at any time.")
 
+    # Initialize realtime plot for first drone
+    try:
+        plot = RealtimePlot(None, lab_xlim=lab_xlim, lab_ylim=lab_ylim)
+        plot.set_instructions('Multi-tracking | Shows drone 0 position')
+    except Exception as e:
+        print(f'Realtime plot unavailable: {e}')
+        plot = None
+
     # MAIN LOOP WITH SAFETY CHECK
     while fly and all(qcf.is_safe() for qcf in qcfs):
 
@@ -161,6 +173,15 @@ with ParallelContexts(*_qcfs) as qcfs:
 
             # Record data for analysis
             recorders[drone_idx].record_state(dt, current_pose, desired_pos)
+
+        # Update realtime plot with drone 0 position
+        if plot is not None:
+            try:
+                first_pose = qcfs[0].pose
+                if first_pose is not None:
+                    plot.update([first_pose.x, first_pose.y, first_pose.z], info=f't={dt:.1f}s')
+            except Exception:
+                pass
 
         # Print progress every 1 second
         if int(dt) % 1 == 0 and dt > 0:
