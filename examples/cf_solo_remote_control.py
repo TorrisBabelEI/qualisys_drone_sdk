@@ -366,7 +366,6 @@ if save_flag:
         recorder.time_list,
         recorder.pos_actual,
         recorder.pos_desired,
-        recorder.vel_actual,
         pos_reference=pos_ref
     )
 else:

@@ -181,7 +181,7 @@ def plot_velocity(time_list, vel_actual):
     return fig, (ax1, ax2, ax3)
 
 
-def plot_all_results(time_list, pos_actual, pos_desired, vel_actual, 
+def plot_all_results(time_list, pos_actual, pos_desired, 
                      pos_reference=None, save_figs=False, fig_dir=None):
     """
     Plot all results
@@ -190,7 +190,6 @@ def plot_all_results(time_list, pos_actual, pos_desired, vel_actual,
     - time_list: Time list
     - pos_actual: Actual position (3, N)
     - pos_desired: Desired position (3, N)
-    - vel_actual: Actual velocity (3, N)
     - pos_reference: Reference trajectory (optional)
     - save_figs: Whether to save figures
     - fig_dir: Directory to save figures
@@ -208,10 +207,6 @@ def plot_all_results(time_list, pos_actual, pos_desired, vel_actual,
     # Tracking error
     fig3, _ = plot_tracking_error(time_list, pos_actual, pos_desired)
     figs.append(('Tracking_Error', fig3))
-    
-    # Velocity
-    fig4, _ = plot_velocity(time_list, vel_actual)
-    figs.append(('Velocity', fig4))
     
     if save_figs and fig_dir:
         if not os.path.exists(fig_dir):
