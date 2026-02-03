@@ -183,7 +183,7 @@ with QualisysCrazyflie(cf_body_name,
             qcf.safe_position_setpoint(hover_target)
 
         sleep(0.02)
-        if qcf.pose is not None and qcf.pose.z > min(0.4, world.expanse * 0.5) and hover_target is not None:
+        if qcf.pose is not None and qcf.pose.z > 0.6 and hover_target is not None:
             break
 
     # If after timeout we still don't have a valid hover target, abort for safety
@@ -288,19 +288,19 @@ with QualisysCrazyflie(cf_body_name,
         if cur_pose is not None:
             recorder.record_state(elapsed, cur_pose, np.array([hover_target.x, hover_target.y, hover_target.z]))
 
-        # Update realtime plot
-        if plot is not None and cur_pose is not None:
+        # Update realtime plot (reduced frequency)
+        if plot is not None and cur_pose is not None and int(elapsed * 10) % 5 == 0:  # Update at 20Hz
             info = f't={elapsed:.1f}s z={cur_pose.z:.2f}m'
             try:
                 plot.update([cur_pose.x, cur_pose.y, cur_pose.z], info=info)
             except Exception:
                 pass
 
-        # Print status every second
-        if int(elapsed) != last_progress_print and elapsed > 0:
-            last_progress_print = int(elapsed)
+        # Print status every 2 seconds
+        if int(elapsed * 0.5) != last_progress_print and elapsed > 0 and int(elapsed * 10) % 20 == 0:  # Every 2 seconds
+            last_progress_print = int(elapsed * 0.5)
             if cur_pose is not None:
-                print(f'[t={elapsed:.1f}s] Pos: ({cur_pose.x:.3f}, {cur_pose.y:.3f}, {cur_pose.z:.3f}) m')
+                print(f'[t={elapsed:.1f}s] Pos: ({cur_pose.x:.2f}, {cur_pose.y:.2f}, {cur_pose.z:.2f}) m')
 
         sleep(1.0 / CONTROL_RATE)
 

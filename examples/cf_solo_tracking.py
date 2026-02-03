@@ -115,7 +115,7 @@ with QualisysCrazyflie(cf_body_name,
     t_start = time()
     dt = 0
     
-    print("Beginning trajectory tracking...")
+    print("Taking off and stabilizing...")
     print("Press ESC to land at any time.")
 
     # MAIN LOOP WITH SAFETY CHECK
@@ -129,14 +129,44 @@ with QualisysCrazyflie(cf_body_name,
         # Mind the clock
         dt = time() - t_start
 
+        # Take off and hover for up to 8 seconds with position validation
+        if dt < 8:
+            # Get current actual position
+            current_pose = qcf.pose
+            
+            first_pos = pos_ref[:, 0]  # First column is first waypoint
+            target = Pose(first_pos[0], first_pos[1], first_pos[2])
+            qcf.safe_position_setpoint(target)
+            
+            # Check if we're stable at start position (after minimum 2s)
+            if current_pose is not None and dt > 2:
+                distance_to_start = ((current_pose.x - first_pos[0])**2 + 
+                                   (current_pose.y - first_pos[1])**2 + 
+                                   (current_pose.z - first_pos[2])**2)**0.5
+                if distance_to_start < 0.15:  # Within 15cm of start point
+                    print(f"[t={dt:.1f}s] Stable at start position, beginning trajectory...")
+                    # Adjust start time to begin trajectory now
+                    t_start = time() - 3  # Reset to act as if 3s have passed
+                    continue
+            
+            print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} at start position...')
+            continue
+
+        # Adjust time for trajectory (subtract hover time)
+        traj_time = dt - 3
+
         # Check if trajectory is completed
-        if dt > flight_time:
+        if traj_time > flight_time:
             print(f"Trajectory completed at t={dt:.2f}s")
             break
 
+        # Start trajectory tracking after hover phase
+        if traj_time == 0:
+            print("Beginning trajectory tracking...")
+
         # Interpolate desired position from trajectory
         try:
-            desired_pos = interpolate_position(dt, t_ref, pos_ref)
+            desired_pos = interpolate_position(traj_time, t_ref, pos_ref)
         except Exception as e:
             print(f"Error interpolating position at t={dt:.2f}s: {e}")
             break
@@ -150,19 +180,23 @@ with QualisysCrazyflie(cf_body_name,
         # Send setpoint to Crazyflie
         qcf.safe_position_setpoint(target)
 
-        # Record data for analysis
-        recorder.record_state(dt, current_pose, desired_pos)
+        # Record data for analysis (only during trajectory tracking)
+        if traj_time >= 0:
+            recorder.record_state(traj_time, current_pose, desired_pos)
 
-        # Update realtime plot
-        if plot is not None and current_pose is not None:
+        # Update realtime plot (reduced frequency)
+        if plot is not None and current_pose is not None and int(dt * 10) % 5 == 0:  # Update at 20Hz
             try:
                 plot.update([current_pose.x, current_pose.y, current_pose.z], info=f't={dt:.1f}s')
             except Exception:
                 pass
 
-        # Print progress every 1 second
-        if int(dt) % 1 == 0 and dt > 0:
-            print(f'[t={dt:.2f}s] Pos: ({current_pose.x:.3f}, {current_pose.y:.3f}, {current_pose.z:.3f}) m')
+        # Print progress every 2 seconds
+        if int(dt * 2) % 2 == 0 and dt > 0 and int(dt * 10) % 20 == 0:  # Every 2 seconds
+            if dt < 8:
+                print(f'[t={dt:.1f}s] Hovering at start position')
+            else:
+                print(f'[t={dt:.1f}s] Pos: ({current_pose.x:.2f}, {current_pose.y:.2f}, {current_pose.z:.2f}) m')
 
         # Small sleep to avoid busy waiting
         sleep(0.01)

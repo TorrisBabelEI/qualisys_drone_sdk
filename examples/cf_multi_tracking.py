@@ -125,7 +125,7 @@ with ParallelContexts(*_qcfs) as qcfs:
     t_start = time()
     dt = 0
     
-    print("Beginning trajectory tracking...")
+    print("Taking off and stabilizing...")
     print("Press ESC to land at any time.")
 
     # Initialize realtime plot for first drone
@@ -142,17 +142,57 @@ with ParallelContexts(*_qcfs) as qcfs:
         # Mind the clock
         dt = time() - t_start
 
+        # Take off and hover for up to 8 seconds with position validation
+        if dt < 8:
+            first_pos = pos_ref[:, 0]  # First column is first waypoint
+            target = Pose(first_pos[0], first_pos[1], first_pos[2])
+            
+            # Send same target to all drones
+            for qcf in qcfs:
+                qcf.safe_position_setpoint(target)
+            
+            # Check if all drones are stable at start position (after minimum 2s)
+            if dt > 2:
+                all_stable = True
+                for qcf in qcfs:
+                    if qcf.pose is not None:
+                        distance_to_start = ((qcf.pose.x - first_pos[0])**2 + 
+                                           (qcf.pose.y - first_pos[1])**2 + 
+                                           (qcf.pose.z - first_pos[2])**2)**0.5
+                        if distance_to_start > 0.15:  # Not within 15cm
+                            all_stable = False
+                            break
+                    else:
+                        all_stable = False
+                        break
+                
+                if all_stable:
+                    print(f"[t={dt:.1f}s] All drones stable at start position, beginning trajectory...")
+                    # Adjust start time to begin trajectory now
+                    t_start = time() - 3  # Reset to act as if 3s have passed
+                    continue
+            
+            print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} {len(qcfs)} drones at start position...')
+            continue
+
+        # Adjust time for trajectory (subtract hover time)
+        traj_time = dt - 3
+
         # Check if trajectory is completed
-        if dt > flight_time:
+        if traj_time > flight_time:
             print(f"Trajectory completed at t={dt:.2f}s")
             break
+
+        # Start trajectory tracking after hover phase
+        if traj_time == 0:
+            print("Beginning trajectory tracking...")
 
         # Cycle all drones
         for drone_idx, qcf in enumerate(qcfs):
             
             # Interpolate desired position from trajectory
             try:
-                desired_pos = interpolate_position(dt, t_ref, pos_ref)
+                desired_pos = interpolate_position(traj_time, t_ref, pos_ref)
             except Exception as e:
                 print(f"Error interpolating position at t={dt:.2f}s: {e}")
                 fly = False
@@ -167,11 +207,12 @@ with ParallelContexts(*_qcfs) as qcfs:
             # Send setpoint to Crazyflie
             qcf.safe_position_setpoint(target)
 
-            # Record data for analysis
-            recorders[drone_idx].record_state(dt, current_pose, desired_pos)
+            # Record data for analysis (only during trajectory tracking)
+            if traj_time >= 0:
+                recorders[drone_idx].record_state(traj_time, current_pose, desired_pos)
 
-        # Update realtime plot with drone 0 position
-        if plot is not None:
+        # Update realtime plot with drone 0 position (reduced frequency)
+        if plot is not None and int(dt * 10) % 5 == 0:  # Update at 20Hz
             try:
                 first_pose = qcfs[0].pose
                 if first_pose is not None:
@@ -179,9 +220,12 @@ with ParallelContexts(*_qcfs) as qcfs:
             except Exception:
                 pass
 
-        # Print progress every 1 second
-        if int(dt) % 1 == 0 and dt > 0:
-            print(f'[t={dt:.2f}s] Flying {len(qcfs)} drones...')
+        # Print progress every 2 seconds
+        if int(dt * 2) % 2 == 0 and dt > 0 and int(dt * 10) % 20 == 0:  # Every 2 seconds
+            if dt < 8:
+                print(f'[t={dt:.1f}s] Hovering {len(qcfs)} drones at start position')
+            else:
+                print(f'[t={dt:.1f}s] Flying {len(qcfs)} drones...')
 
         # Small sleep to avoid busy waiting
         sleep(0.01)
