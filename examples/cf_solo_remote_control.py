@@ -142,10 +142,12 @@ with QualisysCrazyflie(cf_body_name,
             controller = JoystickController(deadzone=DEADZONE_JOYSTICK)
         else:
             print(f"Unknown INPUT_DEVICE='{INPUT_DEVICE}', defaulting to keyboard")
-            controller = KeyboardController(); controller.start()
+            controller = KeyboardController()
+            controller.start()
     except Exception as e:
         print(f"Input device init failed: {e}. Falling back to keyboard behavior.")
-        controller = KeyboardController(); controller.start()
+        controller = KeyboardController()
+        controller.start()
 
     # Initialize realtime plot
     try:
@@ -250,7 +252,7 @@ with QualisysCrazyflie(cf_body_name,
             break
         
         # Check joystick exit button
-        if controller is not None and hasattr(controller, 'is_exit_pressed') and controller.is_exit_pressed():
+        if controller.is_exit_pressed():
             print("Joystick exit button pressed, landing...")
             break
 
@@ -261,26 +263,19 @@ with QualisysCrazyflie(cf_body_name,
             break
 
         # Read inputs
-        dx = dy = dz = 0.0
+        dir_x = dir_y = dir_z = 0.0
         try:
-            if controller is not None:
-                dir_x, dir_y = controller.get_direction()
-                dx = dir_x * MOVEMENT_STEP
-                dy = dir_y * MOVEMENT_STEP
-                
-                # Get altitude input
-                if hasattr(controller, 'get_altitude_direction'):
-                    alt_dir = controller.get_altitude_direction()
-                    if INPUT_DEVICE == 'keyboard':
-                        dz = alt_dir * ALTITUDE_STEP  # Fixed step for keyboard
-                    else:  # joystick
-                        dz = alt_dir * ALTITUDE_STEP * 5  # Variable speed for joystick
-        except Exception as e:
-            # If input fails, ignore and continue hovering
-            dx = dy = dz = 0.0
+            dir_x, dir_y = controller.get_direction()
+            dx = dir_x * MOVEMENT_STEP
+            dy = dir_y * MOVEMENT_STEP
+            
+            dir_z = controller.get_altitude_direction()
+            dz = dir_z * ALTITUDE_STEP
+        except Exception:
+            pass  # Ignore input
 
         # Update hover target position based on inputs
-        if dx != 0.0 or dy != 0.0 or dz != 0.0:
+        if np.sqrt(dir_x**2 + dir_y**2 + dir_z**2) > 1e-4:
             new_x = hover_target.x + dx
             new_y = hover_target.y + dy
             new_z = max(MIN_ALTITUDE, min(MAX_ALTITUDE, hover_target.z + dz))  # Clamp altitude
@@ -328,8 +323,7 @@ with QualisysCrazyflie(cf_body_name,
 
     # Clean up
     try:
-        if controller is not None and hasattr(controller, 'stop'):
-            controller.stop()
+        controller.stop()
     except Exception:
         pass
 

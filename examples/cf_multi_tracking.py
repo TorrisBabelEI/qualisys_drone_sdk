@@ -123,6 +123,8 @@ with ParallelContexts(*_qcfs) as qcfs:
 
     # Let there be time
     t_start = time()
+    hover_time = 3.0  # Default hover time, will be updated when trajectory actually starts
+    trajectory_started = False
     dt = 0
     
     print("Taking off and stabilizing...")
@@ -168,15 +170,16 @@ with ParallelContexts(*_qcfs) as qcfs:
                 
                 if all_stable:
                     print(f"[t={dt:.1f}s] All drones stable at start position, beginning trajectory...")
-                    # Adjust start time to begin trajectory now
-                    t_start = time() - 3  # Reset to act as if 3s have passed
+                    # Record the actual hover time when trajectory starts
+                    hover_time = dt
+                    trajectory_started = True
                     continue
             
             print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} {len(qcfs)} drones at start position...')
             continue
 
-        # Adjust time for trajectory (subtract hover time)
-        traj_time = dt - 3
+        # Calculate trajectory time (time since trajectory started)
+        traj_time = dt - hover_time
 
         # Check if trajectory is completed
         if traj_time > flight_time:
@@ -184,8 +187,9 @@ with ParallelContexts(*_qcfs) as qcfs:
             break
 
         # Start trajectory tracking after hover phase
-        if traj_time == 0:
+        if not trajectory_started and traj_time >= 0:
             print("Beginning trajectory tracking...")
+            trajectory_started = True
 
         # Cycle all drones
         for drone_idx, qcf in enumerate(qcfs):
