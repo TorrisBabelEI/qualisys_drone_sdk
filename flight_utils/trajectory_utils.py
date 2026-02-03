@@ -24,9 +24,9 @@ def load_trajectory(csv_file):
         print(f"Failed to read CSV file: {e}")
         raise
     
-    # Ensure there are 7 rows of data
-    if data.shape[0] != 7:
-        raise ValueError(f"CSV file should have exactly 7 rows, got {data.shape[0]} rows")
+    # Ensure there are at least 4 rows of data (time, x, y, z)
+    if data.shape[0] < 4:
+        raise ValueError(f"CSV file should have at least 4 rows, got {data.shape[0]} rows")
     
     # Extract time and position data
     time_data = data[0, :].flatten()  # Row 1: time (actual time in seconds)

@@ -221,7 +221,6 @@ if save_flag:
     analyzer = FlightDataAnalyzer(
         recorder.time_list,
         recorder.pos_actual,
-        recorder.vel_actual,
         recorder.pos_desired
     )
     

@@ -254,7 +254,6 @@ for drone_idx, recorder in enumerate(recorders):
         analyzer = FlightDataAnalyzer(
             recorder.time_list,
             recorder.pos_actual,
-            recorder.vel_actual,
             recorder.pos_desired
         )
         

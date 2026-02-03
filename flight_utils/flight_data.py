@@ -23,7 +23,6 @@ class FlightDataRecorder:
         # Data storage
         self.time_list = []
         self.pos_actual = np.empty((3, 0))  # Actual position (x, y, z)
-        self.vel_actual = np.empty((3, 0))  # Actual velocity (vx, vy, vz)
         self.pos_desired = np.empty((3, 0))  # Desired position (x, y, z)
         self.idx_iter = 0  # Iteration counter
         
@@ -33,7 +32,7 @@ class FlightDataRecorder:
         
         Args:
         - t: Current time in seconds
-        - actual_pose: Actual pose (Pose object with x, y, z, vx, vy, vz)
+        - actual_pose: Actual pose (Pose object with x, y, z)
         - desired_pos: Desired position [x, y, z]
         """
         self.time_list.append(t)
@@ -41,10 +40,6 @@ class FlightDataRecorder:
         # Record actual position
         actual_pos = np.array([[actual_pose.x], [actual_pose.y], [actual_pose.z]])
         self.pos_actual = np.concatenate((self.pos_actual, actual_pos), axis=1)
-        
-        # Record actual velocity
-        actual_vel = np.array([[actual_pose.vx], [actual_pose.vy], [actual_pose.vz]])
-        self.vel_actual = np.concatenate((self.vel_actual, actual_vel), axis=1)
         
         # Record desired position
         desired_pos_array = np.array([[desired_pos[0]], [desired_pos[1]], [desired_pos[2]]])
@@ -72,12 +67,10 @@ class FlightDataRecorder:
         file_name = os.path.join(save_dir, f"cf_{cf_idx:02d}_{time_str}.csv")
         
         # Prepare data
-        # Row layout: time, x_actual, y_actual, z_actual, vx_actual, vy_actual, vz_actual,
-        #            x_desired, y_desired, z_desired
+        # Row layout: time, x_actual, y_actual, z_actual, x_desired, y_desired, z_desired
         data_to_save = np.vstack([
             np.array(self.time_list),
             self.pos_actual,
-            self.vel_actual,
             self.pos_desired
         ])
         
@@ -91,19 +84,17 @@ class FlightDataRecorder:
 class FlightDataAnalyzer:
     """Analyze flight data and compute statistics"""
     
-    def __init__(self, time_list, pos_actual, vel_actual, pos_desired):
+    def __init__(self, time_list, pos_actual, pos_desired):
         """
         Initialize analyzer
         
         Args:
         - time_list: Time list
         - pos_actual: Actual position (3, N)
-        - vel_actual: Actual velocity (3, N)
         - pos_desired: Desired position (3, N)
         """
         self.time_list = np.array(time_list)
         self.pos_actual = pos_actual
-        self.vel_actual = vel_actual
         self.pos_desired = pos_desired
         
     def compute_tracking_error(self):
