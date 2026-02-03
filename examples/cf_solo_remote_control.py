@@ -9,15 +9,15 @@ KEYBOARD:
 - Arrow keys: Move in XY plane (horizontal movement)
 - W key: Increase altitude by 0.001m per press
 - S key: Decrease altitude by 0.001m per press
-- ESC: Emergency land
+- ESC: Land
 
 JOYSTICK:
 - Right stick: Move in XY plane (horizontal movement)
 - Left stick up/down: Increase/decrease altitude (variable speed based on deflection)
-- Back/Select button (button 6): Emergency land
+- Back/Select button (button 6/left at the front): Land
 
 Safety Features:
-- Altitude limits: 0.4m minimum (avoid ground effect), 1.8m maximum
+- Altitude limits: 0.4m minimum, 1.8m maximum
 - XY movement constrained within lab boundaries
 - MOCAP tracking loss protection (automatic landing if tracking fails)
 
@@ -54,7 +54,6 @@ MOVEMENT_STEP = 0.002  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
 ALTITUDE_STEP = 0.001  # meters per command for keyboard altitude control
 MIN_ALTITUDE = 0.4  # minimum altitude in meters
 MAX_ALTITUDE = 1.8  # maximum altitude in meters
-CONTROL_RATE = 100.0  # Hz approximate
 DEADZONE_JOYSTICK = 0.2
 
 
@@ -113,9 +112,8 @@ try:
         safety_margin
     )
     print(f"Trajectory loaded: {pos_ref.shape[1]} waypoints, flight time: {flight_time}s")
-except Exception as e:
-    print(f"Error loading trajectory: {e}")
-    exit(1)
+except Exception:
+    print('Reference Trajectory is Not Found. Pure Remote Control Mode.')
 
 # Initialize data recorder
 recorder = FlightDataRecorder(cf_idx)
@@ -172,13 +170,13 @@ with QualisysCrazyflie(cf_body_name,
         # If we have a current pose and haven't set hover xy, capture it as the hover target
         if qcf.pose is not None and initial_hover_xy is None:
             try:
-                raw_x = float(qcf.pose.x)
-                raw_y = float(qcf.pose.y)
+                x0 = float(qcf.pose.x)
+                y0 = float(qcf.pose.y)
                 # If the current pose is outside lab limits, abort for safety
                 xmin, xmax = lab_xlim
                 ymin, ymax = lab_ylim
-                if not (xmin <= raw_x <= xmax and ymin <= raw_y <= ymax):
-                    print(f"Initial pose (x={raw_x:.3f}, y={raw_y:.3f}) outside lab limits {lab_xlim, lab_ylim}. Aborting and landing for safety.")
+                if not (xmin <= x0 <= xmax and ymin <= y0 <= ymax):
+                    print(f"Initial pose (x={x0:.3f}, y={y0:.3f}) outside lab limits {lab_xlim, lab_ylim}. Aborting and landing for safety.")
                     # immediate landing
                     while qcf.pose is not None and qcf.pose.z > 0.1:
                         qcf.land_in_place()
@@ -187,7 +185,6 @@ with QualisysCrazyflie(cf_body_name,
                     sys.exit(1)
 
                 # Accept initial position as hover target (already checked within lab limits)
-                x0, y0 = raw_x, raw_y
                 initial_hover_xy = (x0, y0)
                 hover_target = Pose(x0, y0, world.expanse)
             except Exception:
@@ -219,13 +216,13 @@ with QualisysCrazyflie(cf_body_name,
         # Update hover target if we have a more accurate current pose
         if qcf.pose is not None:
             try:
-                raw_x = float(qcf.pose.x)
-                raw_y = float(qcf.pose.y)
+                x0 = float(qcf.pose.x)
+                y0 = float(qcf.pose.y)
                 # If pose drifts outside lab limits, abort immediately
                 xmin, xmax = lab_xlim
                 ymin, ymax = lab_ylim
-                if not (xmin <= raw_x <= xmax and ymin <= raw_y <= ymax):
-                    print(f"Pose drifted outside lab limits during stabilization (x={raw_x:.3f}, y={raw_y:.3f}). Landing for safety.")
+                if not (xmin <= x0 <= xmax and ymin <= y0 <= ymax):
+                    print(f"Pose drifted outside lab limits during stabilization (x={x0:.3f}, y={y0:.3f}). Landing for safety.")
                     while qcf.pose is not None and qcf.pose.z > 0.1:
                         qcf.land_in_place()
                         sleep(0.01)
@@ -233,7 +230,6 @@ with QualisysCrazyflie(cf_body_name,
                     sys.exit(1)
 
                 # Use current position directly (already verified inside lab limits)
-                x0, y0 = raw_x, raw_y
                 hover_target = Pose(x0, y0, world.expanse)
             except Exception:
                 pass
@@ -329,7 +325,6 @@ with QualisysCrazyflie(cf_body_name,
             if cur_pose is not None:
                 print(f'[t={elapsed:.1f}s] Pos: ({cur_pose.x:.2f}, {cur_pose.y:.2f}, {cur_pose.z:.2f}) m')
 
-        sleep(1.0 / CONTROL_RATE)
 
     # Clean up
     try:
