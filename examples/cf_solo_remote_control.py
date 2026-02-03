@@ -5,8 +5,21 @@ This script allows manual control of a Crazyflie using keyboard or joystick inpu
 The drone will take off to hover altitude and then respond to user input commands.
 
 Controls:
-- Arrow keys (keyboard) or joystick to move in XY plane
-- ESC to land at any time
+KEYBOARD:
+- Arrow keys: Move in XY plane (horizontal movement)
+- W key: Increase altitude by 0.001m per press
+- S key: Decrease altitude by 0.001m per press
+- ESC: Emergency land
+
+JOYSTICK:
+- Right stick: Move in XY plane (horizontal movement)
+- Left stick up/down: Increase/decrease altitude (variable speed based on deflection)
+- Back/Select button (button 6): Emergency land
+
+Safety Features:
+- Altitude limits: 0.4m minimum (avoid ground effect), 1.8m maximum
+- XY movement constrained within lab boundaries
+- MOCAP tracking loss protection (automatic landing if tracking fails)
 
 ESC to land at any time.
 """
@@ -38,6 +51,9 @@ from flight_utils.visualization import plot_all_results
 INPUT_DEVICE = 'keyboard'
 MAX_FLIGHT_TIME = 100  # seconds from hover start
 MOVEMENT_STEP = 0.002  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
+ALTITUDE_STEP = 0.001  # meters per command for keyboard altitude control
+MIN_ALTITUDE = 0.4  # minimum altitude in meters
+MAX_ALTITUDE = 1.8  # maximum altitude in meters
 CONTROL_RATE = 100.0  # Hz approximate
 DEADZONE_JOYSTICK = 0.2
 
@@ -138,8 +154,8 @@ with QualisysCrazyflie(cf_body_name,
         plot = RealtimePlot(pos_ref, lab_xlim=lab_xlim, lab_ylim=lab_ylim)
         # Show operation instructions on plot
         instr = (
-            f"Device: {INPUT_DEVICE} | Arrows/Joystick to move | ESC to land | Max {MAX_FLIGHT_TIME}s\n"
-            f"Move step: {MOVEMENT_STEP} m per tick"
+            f"Device: {INPUT_DEVICE} | Arrows/Right stick: XY | W/S/Left stick: altitude | ESC/Back button: land\n"
+            f"XY step: {MOVEMENT_STEP}m | Z step: {ALTITUDE_STEP}m | Alt limits: {MIN_ALTITUDE}-{MAX_ALTITUDE}m"
         )
         plot.set_instructions(instr)
     except Exception as e:
@@ -232,9 +248,14 @@ with QualisysCrazyflie(cf_body_name,
     last_progress_print = 0
     while fly and qcf.is_safe():
 
-        # Terminate upon Esc command
+        # Terminate upon Esc command or joystick exit button
         if last_key_pressed == pynput.keyboard.Key.esc:
             print("ESC pressed, landing...")
+            break
+        
+        # Check joystick exit button
+        if controller is not None and hasattr(controller, 'is_exit_pressed') and controller.is_exit_pressed():
+            print("Joystick exit button pressed, landing...")
             break
 
         # Elapsed control time
@@ -244,20 +265,30 @@ with QualisysCrazyflie(cf_body_name,
             break
 
         # Read inputs
-        dx = dy = 0.0
+        dx = dy = dz = 0.0
         try:
             if controller is not None:
                 dir_x, dir_y = controller.get_direction()
                 dx = dir_x * MOVEMENT_STEP
                 dy = dir_y * MOVEMENT_STEP
+                
+                # Get altitude input
+                if hasattr(controller, 'get_altitude_direction'):
+                    alt_dir = controller.get_altitude_direction()
+                    if INPUT_DEVICE == 'keyboard':
+                        dz = alt_dir * ALTITUDE_STEP  # Fixed step for keyboard
+                    else:  # joystick
+                        dz = alt_dir * ALTITUDE_STEP * 5  # Variable speed for joystick
         except Exception as e:
-            # If joystick fails, ignore and continue hovering
-            dx = dy = 0.0
+            # If input fails, ignore and continue hovering
+            dx = dy = dz = 0.0
 
-        # Update hover target position based on inputs (XY only)
-        if dx != 0.0 or dy != 0.0:
+        # Update hover target position based on inputs
+        if dx != 0.0 or dy != 0.0 or dz != 0.0:
             new_x = hover_target.x + dx
             new_y = hover_target.y + dy
+            new_z = max(MIN_ALTITUDE, min(MAX_ALTITUDE, hover_target.z + dz))  # Clamp altitude
+            
             try:
                 from flight_utils.bounds import clamp_xy
                 new_x, new_y = clamp_xy(new_x, new_y, lab_xlim, lab_ylim)
@@ -270,11 +301,7 @@ with QualisysCrazyflie(cf_body_name,
                 new_x = min(max(new_x, xmin), xmax)
                 new_y = min(max(new_y, ymin), ymax)
 
-            hover_target = Pose(
-                new_x,
-                new_y,
-                hover_target.z,
-            )
+            hover_target = Pose(new_x, new_y, new_z)
 
         # Send setpoint
         qcf.safe_position_setpoint(hover_target)

@@ -22,6 +22,8 @@ class KeyboardController:
         try:
             if key in (self.Key.up, self.Key.down, self.Key.left, self.Key.right):
                 self._pressed.add(key)
+            elif hasattr(key, 'char') and key.char in ('w', 's'):
+                self._pressed.add(key.char)
         except Exception:
             pass
 
@@ -29,6 +31,8 @@ class KeyboardController:
         try:
             if key in (self.Key.up, self.Key.down, self.Key.left, self.Key.right):
                 self._pressed.discard(key)
+            elif hasattr(key, 'char') and key.char in ('w', 's'):
+                self._pressed.discard(key.char)
         except Exception:
             pass
 
@@ -61,6 +65,19 @@ class KeyboardController:
         mag = (dx ** 2 + dy ** 2) ** 0.5
         return dx / mag, dy / mag
 
+    def get_altitude_direction(self):
+        """Return dz where dz is in [-1, 1] for altitude control."""
+        dz = 0
+        if 'w' in self._pressed:
+            dz += 1
+        if 's' in self._pressed:
+            dz -= 1
+        return dz
+
+    def is_exit_pressed(self):
+        """Keyboard doesn't have exit button, always return False."""
+        return False
+
 
 # Joystick support via pygame (optional)
 class JoystickController:
@@ -85,7 +102,7 @@ class JoystickController:
 
     def get_direction(self):
         self.pygame.event.pump()
-        # Common mapping: axis 0 -> x, axis 1 -> y
+        # Right stick: axis 0 -> x, axis 1 -> y
         x = self.j.get_axis(0)
         y = -self.j.get_axis(1)  # invert Y so up is positive
         # Apply deadzone
@@ -93,3 +110,23 @@ class JoystickController:
             return 0.0, 0.0
         mag = (x ** 2 + y ** 2) ** 0.5
         return x / mag, y / mag
+
+    def get_altitude_direction(self):
+        """Return dz for altitude control from left stick Y axis."""
+        self.pygame.event.pump()
+        # Left stick Y axis (axis 3 on most controllers)
+        try:
+            z = -self.j.get_axis(3)  # invert so up is positive
+            if abs(z) < self.deadzone:
+                return 0.0
+            return z  # Return raw value for variable speed
+        except:
+            return 0.0
+
+    def is_exit_pressed(self):
+        """Check if exit button is pressed (button 6 - back/select button)."""
+        self.pygame.event.pump()
+        try:
+            return self.j.get_button(6)  # Back/Select button
+        except:
+            return False
