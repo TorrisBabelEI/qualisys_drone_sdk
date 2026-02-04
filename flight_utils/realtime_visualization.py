@@ -1,4 +1,6 @@
 """Simple real-time 2D visualization for trajectory and drone position."""
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import numpy as np
 import matplotlib.pyplot as plt
 
