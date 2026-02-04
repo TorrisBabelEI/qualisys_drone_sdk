@@ -232,6 +232,10 @@ if save_flag:
     
     # Plot results
     print("Plotting results...")
+    # Set non-interactive backend for post-flight plots
+    import matplotlib
+    matplotlib.use('Agg')
+    
     plot_all_results(
         recorder.time_list,
         recorder.pos_actual,

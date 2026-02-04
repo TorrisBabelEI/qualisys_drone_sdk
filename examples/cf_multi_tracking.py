@@ -272,6 +272,10 @@ for drone_idx, recorder in enumerate(recorders):
 if save_flag:
     print("\nPlotting results...")
     for drone_idx, recorder in enumerate(recorders):
+        # Set non-interactive backend for post-flight plots
+        import matplotlib
+        matplotlib.use('Agg')
+        
         cf_idx = cf_indices[drone_idx]
         plot_all_results(
             recorder.time_list,
