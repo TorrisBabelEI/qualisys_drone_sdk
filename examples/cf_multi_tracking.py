@@ -235,11 +235,19 @@ with ParallelContexts(*_qcfs) as qcfs:
         # Small sleep to avoid busy waiting
         sleep(0.01)
 
-    # Land all drones
+    # Land all drones with timeout
     print("Landing all drones...")
-    while all(qcf.pose.z > 0.1 for qcf in qcfs):
+    landing_start_time = time()
+    LANDING_TIMEOUT = 5  # seconds - force exit if landing takes too long
+    
+    while all(qcf.pose is not None and qcf.pose.z > 0.1 for qcf in qcfs):
+        # Check landing timeout
+        if time() - landing_start_time > LANDING_TIMEOUT:
+            print(f"Landing timeout after {LANDING_TIMEOUT}s - forcing exit for safety")
+            break
         for qcf in qcfs:
-            qcf.land_in_place()
+            if qcf.pose is not None and qcf.pose.z > 0.1:
+                qcf.land_in_place()
         sleep(0.01)
 
 # Save and analyze flight data for each drone

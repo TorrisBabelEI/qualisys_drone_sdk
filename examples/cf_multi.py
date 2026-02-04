@@ -133,8 +133,16 @@ with ParallelContexts(*_qcfs) as qcfs:
             else:
                 fly = False
 
-     # Land
-    while (qcf.pose.z > 0.1):
+     # Land with timeout
+    landing_start_time = time()
+    LANDING_TIMEOUT = 5  # seconds - force exit if landing takes too long
+    
+    while any(qcf.pose is not None and qcf.pose.z > 0.1 for qcf in qcfs):
+        # Check landing timeout
+        if time() - landing_start_time > LANDING_TIMEOUT:
+            print(f"Landing timeout after {LANDING_TIMEOUT}s - forcing exit for safety")
+            break
         for idx, qcf in enumerate(qcfs):
-            qcf.land_in_place()
+            if qcf.pose is not None and qcf.pose.z > 0.1:
+                qcf.land_in_place()
             sleep(0.02)

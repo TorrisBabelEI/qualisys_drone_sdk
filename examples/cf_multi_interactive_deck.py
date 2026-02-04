@@ -135,7 +135,16 @@ with QualisysTraqr(traqr_body_name) as traqr:
                     qcf.safe_position_setpoint(target)
                     sleep(0.02)
 
-        # Land calmly
-        while(any(qcf.pose.z > 0.1 for qcf in qcfs)):
+        # Land calmly with timeout
+        landing_start_time = time()
+        LANDING_TIMEOUT = 5  # seconds - force exit if landing takes too long
+        
+        while any(qcf.pose is not None and qcf.pose.z > 0.1 for qcf in qcfs):
+            # Check landing timeout
+            if time() - landing_start_time > LANDING_TIMEOUT:
+                print(f"Landing timeout after {LANDING_TIMEOUT}s - forcing exit for safety")
+                break
             for qcf in qcfs:
-                qcf.descend()
+                if qcf.pose is not None and qcf.pose.z > 0.1:
+                    qcf.descend()
+            sleep(0.01)

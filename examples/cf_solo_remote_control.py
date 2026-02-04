@@ -333,9 +333,16 @@ with QualisysCrazyflie(cf_body_name,
         except Exception:
             pass
 
-    # Land
+    # Land with timeout
     print("Landing...")
-    while qcf.pose.z > 0.1:
+    landing_start_time = time()
+    LANDING_TIMEOUT = 3  # seconds - force exit if landing takes too long
+    
+    while qcf.pose is not None and qcf.pose.z > 0.1:
+        # Check landing timeout
+        if time() - landing_start_time > LANDING_TIMEOUT:
+            print(f"Landing timeout after {LANDING_TIMEOUT}s - forcing exit for safety")
+            break
         qcf.land_in_place()
         sleep(0.01)
 
