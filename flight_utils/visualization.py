@@ -242,5 +242,6 @@ def plot_all_results(time_list, pos_actual, pos_desired,
             fig.savefig(fig_path, dpi=150)
             print(f"Figure saved: {fig_path}")
     
-    plt.show()
+    # Don't show plots when using non-interactive backend
+    # plt.show()
     return figs

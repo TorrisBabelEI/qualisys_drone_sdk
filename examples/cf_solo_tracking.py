@@ -79,7 +79,6 @@ world = World()
 
 # Load trajectory from CSV file
 traj_path = os.path.join('traj', 'ref', traj_file_name)
-print(f"Loading trajectory from {traj_path}...")
 try:
     t_ref, pos_ref = get_trajectory_reference(
         traj_path, 
@@ -117,7 +116,7 @@ with QualisysCrazyflie(cf_body_name,
     trajectory_started = False
     dt = 0
     
-    print("Taking off and stabilizing...")
+    print("Flight completed successfully")
     print("Press ESC to land at any time.")
 
     # MAIN LOOP WITH SAFETY CHECK
@@ -146,7 +145,8 @@ with QualisysCrazyflie(cf_body_name,
                                    (current_pose.y - first_pos[1])**2 + 
                                    (current_pose.z - first_pos[2])**2)**0.5
                 if distance_to_start < 0.30:  # Within 30cm of start point
-                    print(f"[t={dt:.1f}s] Stable at start position, beginning trajectory...")
+                    if not trajectory_started:  # Only print once
+                        print(f"[t={dt:.1f}s] Stable at start position, beginning trajectory...")
                     # Record the actual hover time when trajectory starts
                     hover_time = dt
                     trajectory_started = True
@@ -196,10 +196,8 @@ with QualisysCrazyflie(cf_body_name,
                 pass
 
         # Print progress every 2 seconds
-        if int(dt * 2) % 2 == 0 and dt > 0 and int(dt * 10) % 20 == 0:  # Every 2 seconds
-            if dt < 8:
-                print(f'[t={dt:.1f}s] Hovering at start position')
-            else:
+        if int(dt) % 2 == 0 and dt > 0 and int(dt * 10) % 20 == 0:  # Every 2 seconds
+            if current_pose is not None:
                 print(f'[t={dt:.1f}s] Pos: ({current_pose.x:.2f}, {current_pose.y:.2f}, {current_pose.z:.2f}) m')
 
         # Small sleep to avoid busy waiting

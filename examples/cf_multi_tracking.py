@@ -94,7 +94,6 @@ world = World()
 
 # Load trajectory from CSV file
 traj_path = os.path.join('traj', 'ref', traj_file_name)
-print(f"Loading trajectory from {traj_path}...")
 try:
     t_ref, pos_ref = get_trajectory_reference(
         traj_path,
@@ -128,7 +127,7 @@ with ParallelContexts(*_qcfs) as qcfs:
     trajectory_started = False
     dt = 0
     
-    print("Taking off and stabilizing...")
+    print("Flight completed successfully")
     print("Press ESC to land at any time.")
 
     # Initialize realtime plot for first drone
@@ -170,7 +169,8 @@ with ParallelContexts(*_qcfs) as qcfs:
                         break
                 
                 if all_stable:
-                    print(f"[t={dt:.1f}s] All drones stable at start position, beginning trajectory...")
+                    if not trajectory_started:  # Only print once
+                        print(f"[t={dt:.1f}s] All drones stable at start position, beginning trajectory...")
                     # Record the actual hover time when trajectory starts
                     hover_time = dt
                     trajectory_started = True
