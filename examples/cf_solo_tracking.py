@@ -45,9 +45,9 @@ cf_body_name = cf_specs["NAME_SINGLE_BODY"]  # QTM rigid body name
 cf_uri = cf_specs["URI"]  # Crazyflie address
 cf_marker_ids = [1, 2, 3, 4] # Active marker IDs
 mocap_ip = cf_specs["QUALISYS_IP"]  # IP address for QTM capture data
-traj_file_name = 'cf_solo_trajectory.csv'  # Trajectory file name (will be loaded from traj/ref/)
-flight_time = 60  # Total flight time in seconds (can be different from trajectory original time)
-save_flag = False  # Whether to save flight data to CSV
+traj_file_name = 'safe_trajectory.csv'  # Trajectory file name (will be loaded from traj/ref/)
+flight_time = 40  # Total flight time in seconds (can be different from trajectory original time)
+save_flag = True  # Whether to save flight data to CSV
 safety_margin = 0.8  # Safety margin for speed check (use 80% of speed limit)
 
 # Lab limits (x_min, x_max), (y_min, y_max)
@@ -145,7 +145,7 @@ with QualisysCrazyflie(cf_body_name,
                 distance_to_start = ((current_pose.x - first_pos[0])**2 + 
                                    (current_pose.y - first_pos[1])**2 + 
                                    (current_pose.z - first_pos[2])**2)**0.5
-                if distance_to_start < 0.15:  # Within 15cm of start point
+                if distance_to_start < 0.30:  # Within 30cm of start point
                     print(f"[t={dt:.1f}s] Stable at start position, beginning trajectory...")
                     # Record the actual hover time when trajectory starts
                     hover_time = dt

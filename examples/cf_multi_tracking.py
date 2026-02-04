@@ -59,7 +59,8 @@ for cf_idx in cf_indices:
         exit(1)
 
 # Trajectory settings (can be customized per drone if needed)
-traj_file_name = 'cf_solo_trajectory.csv'  # Will be loaded from traj/ref/
+traj_file_name = ['cf_01_traj_ref.csv',
+                  'cf_02_traj_ref.csv']  # Will be loaded from traj/ref/
 flight_time = 60  # Total flight time in seconds
 save_flag = False  # Whether to save flight data
 safety_margin = 0.8  # Safety margin for speed check

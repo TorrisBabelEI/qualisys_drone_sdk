@@ -116,10 +116,30 @@ class FlightDataAnalyzer:
         Returns:
         - stats: Dictionary containing various statistics
         """
+        # Handle case with no data
+        if len(self.time_list) == 0 or self.pos_actual.shape[1] == 0:
+            return {
+                'total_time': 0.0,
+                'num_samples': 0,
+                'pos_rms_error': np.array([0.0, 0.0, 0.0]),
+                'pos_mean_error': np.array([0.0, 0.0, 0.0]),
+                'pos_max_error': np.array([0.0, 0.0, 0.0]),
+            }
+        
         error, rms_error = self.compute_tracking_error()
         
+        # Handle case where error array might be empty
+        if error.size == 0:
+            return {
+                'total_time': self.time_list[-1],
+                'num_samples': len(self.time_list),
+                'pos_rms_error': np.array([0.0, 0.0, 0.0]),
+                'pos_mean_error': np.array([0.0, 0.0, 0.0]),
+                'pos_max_error': np.array([0.0, 0.0, 0.0]),
+            }
+        
         stats = {
-            'total_time': self.time_list[-1] if len(self.time_list) > 0 else 0,
+            'total_time': self.time_list[-1],
             'num_samples': len(self.time_list),
             'pos_rms_error': rms_error,
             'pos_mean_error': np.mean(np.abs(error), axis=1),

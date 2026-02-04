@@ -22,8 +22,13 @@ def plot_trajectory_3d(pos_actual, pos_desired, pos_reference=None):
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     
+    # Check if we have any actual data
+    has_actual_data = pos_actual.shape[1] > 0
+    has_desired_data = pos_desired.shape[1] > 0
+    has_reference_data = pos_reference is not None and pos_reference.shape[1] > 0
+    
     # Plot reference trajectory
-    if pos_reference is not None:
+    if has_reference_data:
         ax.plot(pos_reference[0, :], pos_reference[1, :], pos_reference[2, :],
                 color='blue', linestyle='-', linewidth=2, label='Reference Trajectory')
         ax.plot([pos_reference[0, 0]], [pos_reference[1, 0]], [pos_reference[2, 0]],
@@ -31,40 +36,59 @@ def plot_trajectory_3d(pos_actual, pos_desired, pos_reference=None):
         ax.plot([pos_reference[0, -1]], [pos_reference[1, -1]], [pos_reference[2, -1]],
                 marker='X', color='blue', markersize=8, label='Reference End')
     
-    # Plot desired trajectory
-    ax.plot(pos_desired[0, :], pos_desired[1, :], pos_desired[2, :],
-            color='green', linestyle='--', linewidth=1.5, label='Desired Trajectory')
+    # Plot desired trajectory (only if data exists)
+    if has_desired_data:
+        ax.plot(pos_desired[0, :], pos_desired[1, :], pos_desired[2, :],
+                color='green', linestyle='--', linewidth=1.5, label='Desired Trajectory')
     
-    # Plot actual trajectory
-    ax.plot(pos_actual[0, :], pos_actual[1, :], pos_actual[2, :],
-            color='red', linestyle='-', linewidth=2, label='Actual Trajectory')
-    ax.plot([pos_actual[0, 0]], [pos_actual[1, 0]], [pos_actual[2, 0]],
-            marker='s', color='red', markersize=8, label='Actual Start')
-    ax.plot([pos_actual[0, -1]], [pos_actual[1, -1]], [pos_actual[2, -1]],
-            marker='v', color='red', markersize=8, label='Actual End')
+    # Plot actual trajectory (only if data exists)
+    if has_actual_data:
+        ax.plot(pos_actual[0, :], pos_actual[1, :], pos_actual[2, :],
+                color='red', linestyle='-', linewidth=2, label='Actual Trajectory')
+        ax.plot([pos_actual[0, 0]], [pos_actual[1, 0]], [pos_actual[2, 0]],
+                marker='s', color='red', markersize=8, label='Actual Start')
+        ax.plot([pos_actual[0, -1]], [pos_actual[1, -1]], [pos_actual[2, -1]],
+                marker='v', color='red', markersize=8, label='Actual End')
     
-    # Adjust axis range
-    if pos_reference is not None:
-        all_pos = np.concatenate([pos_reference, pos_desired, pos_actual], axis=1)
+    # Adjust axis range based on available data
+    all_pos_list = []
+    if has_reference_data:
+        all_pos_list.append(pos_reference)
+    if has_desired_data:
+        all_pos_list.append(pos_desired)
+    if has_actual_data:
+        all_pos_list.append(pos_actual)
+    
+    if len(all_pos_list) > 0:
+        all_pos = np.concatenate(all_pos_list, axis=1)
+        
+        X = all_pos[0, :]
+        Y = all_pos[1, :]
+        Z = all_pos[2, :]
+        
+        max_range = np.array([X.max()-X.min(), Y.max()-Y.min(), Z.max()-Z.min()]).max() / 2.0
+        mid_x = (X.max() + X.min()) * 0.5
+        mid_y = (Y.max() + Y.min()) * 0.5
+        mid_z = (Z.max() + Z.min()) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax.set_zlim(mid_z - max_range, mid_z + max_range)
     else:
-        all_pos = np.concatenate([pos_desired, pos_actual], axis=1)
-    
-    X = all_pos[0, :]
-    Y = all_pos[1, :]
-    Z = all_pos[2, :]
-    
-    max_range = np.array([X.max()-X.min(), Y.max()-Y.min(), Z.max()-Z.min()]).max() / 2.0
-    mid_x = (X.max() + X.min()) * 0.5
-    mid_y = (Y.max() + Y.min()) * 0.5
-    mid_z = (Z.max() + Z.min()) * 0.5
-    ax.set_xlim(mid_x - max_range, mid_x + max_range)
-    ax.set_ylim(mid_y - max_range, mid_y + max_range)
-    ax.set_zlim(mid_z - max_range, mid_z + max_range)
+        # Default axis limits if no data
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+        ax.set_zlim(0, 1)
     
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
-    ax.set_title('3D Trajectory Comparison')
+    
+    # Update title based on what data is available
+    if has_actual_data:
+        ax.set_title('3D Trajectory Comparison')
+    else:
+        ax.set_title('3D Trajectory Comparison (No Flight Data)')
+    
     ax.legend(loc='upper left')
     ax.grid(True)
     

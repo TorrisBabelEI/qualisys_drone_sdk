@@ -50,8 +50,8 @@ from flight_utils.visualization import plot_all_results
 # Supported devices: 'keyboard' | 'joystick'
 INPUT_DEVICE = 'keyboard'
 MAX_FLIGHT_TIME = 100  # seconds from hover start
-MOVEMENT_STEP = 0.005  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
-ALTITUDE_STEP = 0.002  # meters per command for keyboard altitude control
+MOVEMENT_STEP = 1e-3  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
+ALTITUDE_STEP = 5e-4  # meters per command for keyboard altitude control
 MIN_ALTITUDE = 0.4  # minimum altitude in meters
 MAX_ALTITUDE = 1.8  # maximum altitude in meters
 DEADZONE_JOYSTICK = 0.2
