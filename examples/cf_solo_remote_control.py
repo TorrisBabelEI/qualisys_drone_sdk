@@ -58,7 +58,7 @@ DEADZONE_JOYSTICK = 0.2
 
 
 # Select required crazyflie index
-cf_idx = 1
+cf_idx = 5
 
 cf_json = f'config_crazyflie_{cf_idx}.json'
 with open(cf_json, 'r') as cfg:
