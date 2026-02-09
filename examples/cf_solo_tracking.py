@@ -45,8 +45,8 @@ cf_body_name = cf_specs["NAME_SINGLE_BODY"]  # QTM rigid body name
 cf_uri = cf_specs["URI"]  # Crazyflie address
 cf_marker_ids = [1, 2, 3, 4] # Active marker IDs
 mocap_ip = cf_specs["QUALISYS_IP"]  # IP address for QTM capture data
-traj_file_name = 'safe_trajectory.csv'  # Trajectory file name (will be loaded from traj/ref/)
-flight_time = 40  # Total flight time in seconds (can be different from trajectory original time)
+traj_file_name = 'with_erroreous_intervention.csv'  # Trajectory file name (will be loaded from traj/ref/)
+flight_time = 45  # Total flight time in seconds (can be different from trajectory original time)
 save_flag = True  # Whether to save flight data to CSV
 safety_margin = 0.8  # Safety margin for speed check (use 80% of speed limit)
 
