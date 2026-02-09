@@ -98,8 +98,8 @@ listener = pynput.keyboard.Listener(on_press=on_press)
 listener.start()
 
 
-# Set up world - the World object comes with sane defaults
-world = World()
+# Set up world with expanse covering lab space
+world = World(expanse=2.5)
 
 # Load trajectory from CSV file
 traj_path = os.path.join('traj', 'ref', traj_file_name)

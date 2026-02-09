@@ -89,8 +89,8 @@ listener = pynput.keyboard.Listener(on_press=on_press)
 listener.start()
 
 
-# Set up world - the World object comes with sane defaults
-world = World()
+# Set up world with expanse covering lab space
+world = World(expanse=2.5)
 
 # Load trajectory from CSV file
 traj_path = os.path.join('traj', 'ref', traj_file_name)
@@ -102,6 +102,17 @@ try:
         safety_margin
     )
     print(f"Trajectory loaded: {pos_ref.shape[1]} waypoints, flight time: {flight_time}s")
+    
+    # Validate trajectory is within lab bounds
+    x_vals, y_vals = pos_ref[0, :], pos_ref[1, :]
+    if np.any(x_vals < lab_xlim[0]) or np.any(x_vals > lab_xlim[1]):
+        print(f"ERROR: Trajectory X values [{x_vals.min():.2f}, {x_vals.max():.2f}] exceed lab limits {lab_xlim}")
+        exit(1)
+    if np.any(y_vals < lab_ylim[0]) or np.any(y_vals > lab_ylim[1]):
+        print(f"ERROR: Trajectory Y values [{y_vals.min():.2f}, {y_vals.max():.2f}] exceed lab limits {lab_ylim}")
+        exit(1)
+    print(f"Trajectory validated within lab bounds X{lab_xlim}, Y{lab_ylim}")
+    
 except Exception as e:
     print(f"Error loading trajectory: {e}")
     exit(1)
