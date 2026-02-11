@@ -115,13 +115,12 @@ def validate_trajectory_speed(positions, time_data, speed_limit, safety_margin=0
 def scale_trajectory_time(time_data, flight_time):
     """
     Scale trajectory time to match desired flight time.
-
-    For equally spaced `time_data` (typical), this replaces the sequence with
-    `np.linspace(0, flight_time, num=n_samples)` to ensure uniform spacing and
-    precise end-time.
     """
-    if time_data[0] != 0:
-        raise ValueError("Time data must start at 0")
+    # Accept lists or numpy arrays
+    time_data = np.asarray(time_data, dtype=float)
+
+    if time_data.ndim != 1:
+        raise ValueError("time_data must be a 1D sequence")
 
     n = len(time_data)
     if n < 2:
@@ -130,7 +129,16 @@ def scale_trajectory_time(time_data, flight_time):
     if flight_time <= 0:
         raise ValueError("flight_time must be positive")
 
-    scaled_time = np.linspace(0, flight_time, num=n)
+    # Convert to relative time starting at zero to handle non-zero-start timestamps
+    rel = time_data - time_data[0]
+
+    total = rel[-1]
+    if total <= 0:
+        raise ValueError("time_data must be strictly increasing")
+
+    # Normalize to [0, 1] by dividing by the total duration, then scale to flight_time
+    normalized = rel / total
+    scaled_time = normalized * flight_time
 
     return scaled_time
 
