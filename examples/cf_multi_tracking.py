@@ -185,6 +185,11 @@ with ParallelContexts(*_qcfs) as qcfs:
                     # Record the actual hover time when trajectory starts
                     hover_time = dt
                     trajectory_started = True
+                    # Record initial state at t=0 for each drone
+                    first_pos = pos_ref[:, 0]
+                    for drone_idx, qcf in enumerate(qcfs):
+                        if qcf.pose is not None:
+                            recorders[drone_idx].record_state(0, qcf.pose, first_pos)
                     continue
             
             print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} {len(qcfs)} drones at start position...')

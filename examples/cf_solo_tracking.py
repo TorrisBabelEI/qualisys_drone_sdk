@@ -161,6 +161,8 @@ with QualisysCrazyflie(cf_body_name,
                     # Record the actual hover time when trajectory starts
                     hover_time = dt
                     trajectory_started = True
+                    # Record initial state at t=0
+                    recorder.record_state(0, current_pose, first_pos)
                     continue
             
             print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} at start position...')

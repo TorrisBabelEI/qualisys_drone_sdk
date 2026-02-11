@@ -241,6 +241,10 @@ with QualisysCrazyflie(cf_body_name,
     # Start control timer from now
     hover_start_time = time()
     print(f"Hover achieved at x={hover_target.x:.3f}, y={hover_target.y:.3f}. Controls enabled (device={INPUT_DEVICE}). Max flight time: {MAX_FLIGHT_TIME}s")
+    
+    # Record initial state at t=0
+    if qcf.pose is not None:
+        recorder.record_state(0, qcf.pose, np.array([hover_target.x, hover_target.y, hover_target.z]))
 
     # MAIN CONTROL LOOP
     last_progress_print = 0
@@ -258,6 +262,7 @@ with QualisysCrazyflie(cf_body_name,
 
         # Elapsed control time
         elapsed = time() - hover_start_time
+        
         if elapsed > MAX_FLIGHT_TIME:
             print(f"Max flight time reached ({MAX_FLIGHT_TIME}s), landing...")
             break
