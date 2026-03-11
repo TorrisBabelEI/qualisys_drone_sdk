@@ -5,7 +5,7 @@ from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 
 # List the Crazyflie indices you want to configure
-CF_INDICES = [1, 2, 3]
+CF_INDICES = [4, 5]
 
 def load_cf_configs(cf_indices):
     """Load configs from config_crazyflie_*.json and build URI->marker_ids mapping."""
@@ -27,10 +27,15 @@ def set_active_marker_ids(uri, ids):
     print(f"Connecting {uri} and setting marker IDs...")
     try:
         with SyncCrazyflie(uri, cf=Crazyflie(rw_cache="./cache")) as scf:
+            scf.cf.param.set_value("activeMarker.mode", "0")
+            time.sleep(0.5)
+
             scf.cf.param.set_value("activeMarker.front", str(ids[0]))
             scf.cf.param.set_value("activeMarker.right", str(ids[1]))
             scf.cf.param.set_value("activeMarker.back", str(ids[2]))
             scf.cf.param.set_value("activeMarker.left", str(ids[3]))
+
+            time.sleep(0.5)
 
             # Ensure Active Marker mode
             scf.cf.param.set_value("activeMarker.mode", "1")
@@ -42,7 +47,7 @@ def set_active_marker_ids(uri, ids):
         print(f"Failed to connect or set {uri}: {e}")
 
 if __name__ == "__main__":
-    cflib.crtp.init_drivers()
+    cflib.crtp.init_drivers(enable_debug_driver=False)
 
     cf_configs = load_cf_configs(CF_INDICES)
 
