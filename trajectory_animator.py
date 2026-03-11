@@ -103,14 +103,14 @@ class TrajectoryAnimator:
             )
             self.ax.add_patch(rect)
         
-        # Draw danger zones (red color) if provided
+        # Draw danger zones (orange color) if provided
         if self.danger_zones is not None:
             for i, dz in enumerate(self.danger_zones):
                 width = dz[1] - dz[0]
                 height = dz[3] - dz[2]
                 rect = patches.Rectangle(
                     (dz[0], dz[2]), width, height,
-                    linewidth=2, edgecolor='red', facecolor='red', alpha=0.3,
+                    linewidth=2, edgecolor='orange', facecolor='orange', alpha=0.3,
                     label='Danger Zone' if i == 0 else None
                 )
                 self.ax.add_patch(rect)
@@ -189,7 +189,7 @@ class TrajectoryAnimator:
                                    label='Obstacles' if i == 0 else None)
             self.ax.add_collection3d(poly)
         
-        # Draw danger zones (red color, as vertical columns) if provided
+        # Draw danger zones (orange color, as vertical columns) if provided
         if self.danger_zones is not None:
             for i, dz in enumerate(self.danger_zones):
                 x_coords = [dz[0], dz[1], dz[1], dz[0], dz[0]]
@@ -216,7 +216,7 @@ class TrajectoryAnimator:
                 verts.append([[dz[1], dz[2], z_min], [dz[1], dz[3], z_min], 
                              [dz[1], dz[3], z_max], [dz[1], dz[2], z_max]])
                 
-                poly = Poly3DCollection(verts, alpha=0.2, facecolor='red', edgecolor='red',
+                poly = Poly3DCollection(verts, alpha=0.2, facecolor='orange', edgecolor='orange',
                                        label='Danger Zone' if i == 0 else None)
                 self.ax.add_collection3d(poly)
         
@@ -332,10 +332,10 @@ def main():
     # ===== CONFIGURATION SECTION - EDIT THESE PARAMETERS =====
     
     # Path to your CSV file
-    csv_file = 'traj/out/cf_02_20260209154102(WithIntervention).csv'  # Change this to your CSV file path
+    csv_file = 'traj/out/cf_01_20260209154656(WithErrorIntervention).csv'  # Change this to your CSV file path
     
     # Output settings
-    output_file = 'traj/out/cf_02_20260209154102(WithIntervention).mp4'  # Output file (.mp4 or .gif)
+    output_file = 'traj/out/cf_01_20260209154656(WithErrorIntervention).mp4'  # Output file (.mp4 or .gif)
     fps = 30                                   # Frames per second
     speed_multiplier = 1.0                     # Animation speed (1.0 = normal, 2.0 = 2x faster)
     use_3d = False                             # Set to True for 3D visualization
@@ -343,8 +343,9 @@ def main():
     # Danger zones [x_min, x_max, y_min, y_max] (set to None to disable)
     # You can add multiple danger zones just like obstacles
     danger_zones = np.array([
-        [-0.5, 0.5, -0.5, 0.5],      # First danger zone
-        # [1.2, 1.8, 0.8, 1.3],      # Uncomment to add more danger zones
+        # [-0.5, 0.5, -0.5, 0.5],      # First danger zone
+        [0, 0, 0, 0]
+        # [1.2, 1.8, 0.8, 1.3],       # Uncomment to add more danger zones
     ])
     # Or set to None if no danger zones needed:
     # danger_zones = None
