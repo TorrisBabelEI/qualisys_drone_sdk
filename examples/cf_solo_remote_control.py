@@ -58,7 +58,7 @@ DEADZONE_JOYSTICK = 0.2
 
 
 # Select required crazyflie index
-cf_idx = 4
+cf_idx = 2
 
 cf_json = f'config_crazyflie_{cf_idx}.json'
 with open(cf_json, 'r') as cfg:
@@ -188,7 +188,7 @@ with QualisysCrazyflie(cf_body_name,
 
                 # Accept initial position as hover target (already checked within lab limits)
                 initial_hover_xy = (x0, y0)
-                hover_target = Pose(x0, y0, np.mean(MIN_ALTITUDE, MAX_ALTITUDE))
+                hover_target = Pose(x0, y0,(MIN_ALTITUDE, MAX_ALTITUDE)/2)
             except Exception:
                 initial_hover_xy = None
 
@@ -232,7 +232,7 @@ with QualisysCrazyflie(cf_body_name,
                     sys.exit(1)
 
                 # Use current position directly (already verified inside lab limits)
-                hover_target = Pose(x0, y0, np.mean(MIN_ALTITUDE, MAX_ALTITUDE))
+                hover_target = Pose(x0, y0, (MIN_ALTITUDE, MAX_ALTITUDE)/2)
             except Exception:
                 pass
         qcf.safe_position_setpoint(hover_target)
