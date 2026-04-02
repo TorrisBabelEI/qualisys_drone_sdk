@@ -53,12 +53,12 @@ MAX_FLIGHT_TIME = 100  # seconds from hover start
 MOVEMENT_STEP = 1e-3  # meters per command (approx per 0.01s loop -> ~0.2 m/s)
 ALTITUDE_STEP = 5e-4  # meters per command for keyboard altitude control
 MIN_ALTITUDE = 0.4  # minimum altitude in meters
-MAX_ALTITUDE = 1.8  # maximum altitude in meters
+MAX_ALTITUDE = 1.5 # maximum altitude in meters
 DEADZONE_JOYSTICK = 0.2
 
 
 # Select required crazyflie index
-cf_idx = 5
+cf_idx = 3
 
 cf_json = f'config_crazyflie_{cf_idx}.json'
 with open(cf_json, 'r') as cfg:
@@ -188,7 +188,7 @@ with QualisysCrazyflie(cf_body_name,
 
                 # Accept initial position as hover target (already checked within lab limits)
                 initial_hover_xy = (x0, y0)
-                hover_target = Pose(x0, y0, world.expanse)
+                hover_target = Pose(x0, y0, 1.0)
             except Exception:
                 initial_hover_xy = None
 
