@@ -1,54 +1,64 @@
 '''
-Sanity check to see if the unidentified
-markers are passed on to the system.
+Sanity check to track 6DOF Rigid Bodies with explicit Name discovery.
 '''
 
 import qtm
 import asyncio
 
+# Global variable to store body names retrieved from settings
+body_names = []
+
 def on_packet(packet):
-    # 1. Retrieve identified markers (Labeled)
-    # Note: 'markers' is a list of points; 'info' contains component metadata
-    info, markers = packet.get_3d_markers()
+    global body_names
+    # 1. Get 6DOF Body data
+    info, bodies = packet.get_6d()
     
-    # 2. Retrieve unidentified trajectories (Unlabeled)
-    # Ensure "3dnolabels" is included in the components during setup
-    info_un, markers_un = packet.get_3d_markers_no_label()
-    
-    # 3. Calculate marker counts
-    num_labeled = len(markers) if markers else 0
-    num_unlabeled = len(markers_un) if markers_un else 0
-    
-    # 4. Access the frame number directly from the packet object
     frame = packet.framenumber
     
-    if num_labeled + num_unlabeled > 0:
-        print(f"Frame {frame}: Labeled={num_labeled}, Unlabeled={num_unlabeled}")
+    if bodies:
+        num_bodies = len(bodies)
+        print(f"\nFrame {frame}: Total Bodies Tracked = {num_bodies}")
         
-        # Print coordinates of the first unlabeled marker for verification
-        if num_unlabeled > 0:
-            m = markers_un[0]
-            print(f"  [Unlabeled] ID: {m.id} -> x: {m.x:.2f}, y: {m.y:.2f}, z: {m.z:.2f}")
+        # Define the target list from your crazyflies.yaml
+        targets = ["cf_01", "cf_02", "cf_03", "cf_04", "cf_05"]
+        
+        for target in targets:
+            if target in body_names:
+                idx = body_names.index(target)
+                # Check if the body index is within the received packet data
+                if idx < len(bodies):
+                    pos, rot = bodies[idx]
+                    # Position is in mm; convert to meters for ROS
+                    print(f"  [FOUND] {target} -> x: {pos.x/1000:.3f}[m], y: {pos.y/1000:.3f}[m], z: {pos.z/1000:.3f}[m]")
+            else:
+                print(f"  [MISSING] {target} (Current QTM Names: {body_names})")
     else:
-        print(f"Frame {frame}: No markers detected.")
+        print(f"Frame {frame}: No 6D data in packet.")
 
 async def setup():
-    print("Connecting to QTM...")
+    global body_names
+    print("Connecting to QTM at 192.168.1.122...")
     connection = await qtm.connect("192.168.1.122")
     if connection is None:
         print("Connection failed.")
         return
 
-    print("Connected successfully. Starting stream...")
-    # Essential: Include "3dnolabels" to receive the unidentified trajectories
-    await connection.stream_frames(components=["3d", "3dnolabels"], on_packet=on_packet)
+    # 2. CRITICAL: Fetch the parameters/settings to get the actual Body Names
+    # This allows the script to map the index in the packet to a name like 'cf_03'
+    params_xml = await connection.get_parameters(parameters=["6d"])
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(params_xml)
+    body_names = [body.find("Name").text for body in root.findall(".//Body")]
     
-    # Keep the event loop alive to continue receiving packets
+    print(f"Discovered Body Names in QTM: {body_names}")
+    print("Starting 6D Rigid Body stream...")
+    
+    await connection.stream_frames(components=["6d"], on_packet=on_packet)
+    
     while True:
         await asyncio.sleep(1)
 
 if __name__ == "__main__":
-    # Execute the asynchronous entry point using asyncio
     try:
         asyncio.run(setup())
     except KeyboardInterrupt:
