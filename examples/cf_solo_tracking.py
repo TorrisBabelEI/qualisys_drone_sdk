@@ -43,7 +43,7 @@ with open(cf_json, 'r') as cfg:
 # SETTINGS
 cf_body_name = cf_specs["NAME_SINGLE_BODY"]  # QTM rigid body name
 cf_uri = cf_specs["URI"]  # Crazyflie address
-cf_marker_ids = [1, 2, 3, 4] # Active marker IDs
+cf_marker_ids = [int(f"{cf_idx}{i}") for i in range(1, 5)]  # Active Marker IDs (assuming 4 markers per drone, named like "11", "12", "13", "14" for cf_idx=1)
 mocap_ip = cf_specs["QUALISYS_IP"]  # IP address for QTM capture data
 traj_file_name = 'with_erroreous_intervention.csv'  # Trajectory file name (will be loaded from traj/ref/)
 flight_time = 45  # Total flight time in seconds (can be different from trajectory original time)
