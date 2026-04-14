@@ -61,7 +61,7 @@ for cf_idx in cf_indices:
 # Trajectory settings (can be customized per drone if needed)
 traj_file_name = ['cf_01_traj_ref.csv',
                   'cf_02_traj_ref.csv']  # Will be loaded from traj/ref/
-flight_time = 60  # Total flight time in seconds
+flight_time = None  # Total flight time in seconds; None to use longest last timestamp across CSVs
 save_flag = False  # Whether to save flight data
 safety_margin = 0.8  # Safety margin for speed check
 
@@ -92,27 +92,35 @@ listener.start()
 # Set up world with expanse covering lab space
 world = World(expanse=2.5)
 
-# Load trajectory from CSV file
-traj_path = os.path.join('traj', 'ref', traj_file_name)
+# Load trajectory per drone
+t_refs, pos_refs = [], []
 try:
-    t_ref, pos_ref = get_trajectory_reference(
-        traj_path,
-        flight_time,
-        world.speed_limit,
-        safety_margin
-    )
-    print(f"Trajectory loaded: {pos_ref.shape[1]} waypoints, flight time: {flight_time}s")
-    
-    # Validate trajectory is within lab bounds
-    x_vals, y_vals = pos_ref[0, :], pos_ref[1, :]
-    if np.any(x_vals < lab_xlim[0]) or np.any(x_vals > lab_xlim[1]):
-        print(f"ERROR: Trajectory X values [{x_vals.min():.2f}, {x_vals.max():.2f}] exceed lab limits {lab_xlim}")
-        exit(1)
-    if np.any(y_vals < lab_ylim[0]) or np.any(y_vals > lab_ylim[1]):
-        print(f"ERROR: Trajectory Y values [{y_vals.min():.2f}, {y_vals.max():.2f}] exceed lab limits {lab_ylim}")
-        exit(1)
-    print(f"Trajectory validated within lab bounds X{lab_xlim}, Y{lab_ylim}")
-    
+    for fname in traj_file_name:
+        traj_path = os.path.join('traj', 'ref', fname)
+        t_ref, pos_ref = get_trajectory_reference(
+            traj_path,
+            flight_time,
+            world.speed_limit,
+            safety_margin
+        )
+        t_refs.append(t_ref)
+        pos_refs.append(pos_ref)
+        print(f"Trajectory loaded: {fname}, {pos_ref.shape[1]} waypoints, duration: {t_ref[-1]:.2f}s")
+
+        # Validate trajectory is within lab bounds
+        x_vals, y_vals = pos_ref[0, :], pos_ref[1, :]
+        if np.any(x_vals < lab_xlim[0]) or np.any(x_vals > lab_xlim[1]):
+            print(f"ERROR: {fname} X values [{x_vals.min():.2f}, {x_vals.max():.2f}] exceed lab limits {lab_xlim}")
+            exit(1)
+        if np.any(y_vals < lab_ylim[0]) or np.any(y_vals > lab_ylim[1]):
+            print(f"ERROR: {fname} Y values [{y_vals.min():.2f}, {y_vals.max():.2f}] exceed lab limits {lab_ylim}")
+            exit(1)
+    print(f"All trajectories validated within lab bounds X{lab_xlim}, Y{lab_ylim}")
+
+    if flight_time is None:
+        flight_time = max(t[-1] for t in t_refs)
+    print(f"Flight time: {flight_time:.2f}s")
+
 except Exception as e:
     print(f"Error loading trajectory: {e}")
     exit(1)
@@ -157,7 +165,7 @@ with ParallelContexts(*_qcfs) as qcfs:
 
         # Take off and hover for up to 8 seconds with position validation
         if dt < 8:
-            first_pos = pos_ref[:, 0]  # First column is first waypoint
+            first_pos = pos_refs[0][:, 0]  # Use first drone's start position for shared hover target
             target = Pose(first_pos[0], first_pos[1], first_pos[2])
             
             # Send same target to all drones
@@ -186,10 +194,9 @@ with ParallelContexts(*_qcfs) as qcfs:
                     hover_time = dt
                     trajectory_started = True
                     # Record initial state at t=0 for each drone
-                    first_pos = pos_ref[:, 0]
                     for drone_idx, qcf in enumerate(qcfs):
                         if qcf.pose is not None:
-                            recorders[drone_idx].record_state(0, qcf.pose, first_pos)
+                            recorders[drone_idx].record_state(0, qcf.pose, pos_refs[drone_idx][:, 0])
                     continue
             
             print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} {len(qcfs)} drones at start position...')
@@ -213,7 +220,7 @@ with ParallelContexts(*_qcfs) as qcfs:
             
             # Interpolate desired position from trajectory
             try:
-                desired_pos = interpolate_position(traj_time, t_ref, pos_ref)
+                desired_pos = interpolate_position(traj_time, t_refs[drone_idx], pos_refs[drone_idx])
             except Exception as e:
                 print(f"Error interpolating position at t={dt:.2f}s: {e}")
                 fly = False
@@ -305,7 +312,7 @@ if save_flag:
             recorder.time_list,
             recorder.pos_actual,
             recorder.pos_desired,
-            pos_reference=pos_ref,
+            pos_reference=pos_refs[drone_idx],
             save_figs=False
         )
 

@@ -86,6 +86,8 @@ try:
         world.speed_limit,
         safety_margin
     )
+    flight_time = t_ref[-1] if flight_time is None else flight_time # Use time from file if flight_time not provided,
+                                                                    # otherwise use scaled time (after validation)
     print(f"Trajectory loaded: {pos_ref.shape[1]} waypoints, flight time: {flight_time}s")
     
     # Validate trajectory is within lab bounds
