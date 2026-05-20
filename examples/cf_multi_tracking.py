@@ -46,7 +46,7 @@ DRONE_TABLE = {
 }
 
 # List of Crazyflie indices to control (must be keys in DRONE_TABLE)
-cf_indices = [1, 2]
+cf_indices = [1, 2, 3, 4, 5]
 
 # Build per-drone lists, reassigning dongle index sequentially
 cf_body_names = []
@@ -61,10 +61,15 @@ for dongle_idx, cf_idx in enumerate(cf_indices):
     cf_marker_ids_list.append(marker_ids)
 
 # Trajectory settings (can be customized per drone if needed)
-traj_file_name = ['cf_01_traj_ref.csv',
-                  'cf_02_traj_ref.csv']  # Will be loaded from traj/ref/
+traj_file_name = [
+    'cf_traj_ref_01.csv',
+    'cf_traj_ref_02.csv',
+    'cf_traj_ref_03.csv',
+    'cf_traj_ref_04.csv',
+    'cf_traj_ref_05.csv',
+    ]  # Will be loaded from traj/ref/
 flight_time = None  # Total flight time in seconds; None to use longest last timestamp across CSVs
-save_flag = False  # Whether to save flight data
+save_flag = True  # Whether to save flight data
 safety_margin = 0.8  # Safety margin for speed check
 
 # Lab limits (x_min, x_max), (y_min, y_max), (z_min, z_max)
