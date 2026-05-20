@@ -77,6 +77,9 @@ lab_xlim = (-2.4, 2.4)
 lab_ylim = (-1.8, 1.6)
 lab_zlim = (0.1, 2.0)  # ceiling height limit
 
+fix_altitude = False   # If True, override Z from trajectory with fixed_z
+fixed_z = 0.5          # Fixed altitude to use when fix_altitude is True (m)
+
 
 # Watch key presses with a global variable
 last_key_pressed = None
@@ -174,23 +177,23 @@ with ParallelContexts(*_qcfs) as qcfs:
         # Mind the clock
         dt = time() - t_start
 
-        # Take off and hover for up to 8 seconds with position validation
-        if dt < 8:
-            first_pos = pos_refs[0][:, 0]  # Use first drone's start position for shared hover target
-            target = Pose(first_pos[0], first_pos[1], first_pos[2])
+        # Take off and hover; window scales with number of drones (4s base + 2s per drone)
+        hover_window = 4 + 2 * len(qcfs)
+        if dt < hover_window:
+            # Send each drone to its own trajectory start position
+            for drone_idx, qcf in enumerate(qcfs):
+                start_pos = pos_refs[drone_idx][:, 0]
+                qcf.safe_position_setpoint(Pose(start_pos[0], start_pos[1], start_pos[2]))
             
-            # Send same target to all drones
-            for qcf in qcfs:
-                qcf.safe_position_setpoint(target)
-            
-            # Check if all drones are stable at start position (after minimum 2s)
+            # Check if all drones are stable at their own start positions (after minimum 2s)
             if dt > 2:
                 all_stable = True
-                for qcf in qcfs:
+                for drone_idx, qcf in enumerate(qcfs):
+                    start_pos = pos_refs[drone_idx][:, 0]
                     if qcf.pose is not None:
-                        distance_to_start = ((qcf.pose.x - first_pos[0])**2 + 
-                                           (qcf.pose.y - first_pos[1])**2 + 
-                                           (qcf.pose.z - first_pos[2])**2)**0.5
+                        distance_to_start = ((qcf.pose.x - start_pos[0])**2 + 
+                                           (qcf.pose.y - start_pos[1])**2 + 
+                                           (qcf.pose.z - start_pos[2])**2)**0.5
                         if distance_to_start > 0.15:  # Not within 15cm
                             all_stable = False
                             break
@@ -208,6 +211,7 @@ with ParallelContexts(*_qcfs) as qcfs:
                     for drone_idx, qcf in enumerate(qcfs):
                         if qcf.pose is not None:
                             recorders[drone_idx].record_state(0, qcf.pose, pos_refs[drone_idx][:, 0])
+
                     continue
             
             print(f'[t={dt:.1f}s] {"Taking off" if dt < 2 else "Stabilizing"} {len(qcfs)} drones at start position...')
@@ -241,7 +245,11 @@ with ParallelContexts(*_qcfs) as qcfs:
             current_pose = qcf.pose
 
             # Create target pose with desired position
-            target = Pose(desired_pos[0], desired_pos[1], desired_pos[2])
+            target = Pose(
+                np.clip(desired_pos[0], lab_xlim[0], lab_xlim[1]),
+                np.clip(desired_pos[1], lab_ylim[0], lab_ylim[1]),
+                fixed_z if fix_altitude else np.clip(desired_pos[2], lab_zlim[0], lab_zlim[1])
+            )
 
             # Send setpoint to Crazyflie
             qcf.safe_position_setpoint(target)
