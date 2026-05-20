@@ -29,7 +29,7 @@ class TrajectoryAnimator:
         self.use_3d = use_3d
         
         # Define spatial limits
-        self.box_limit = np.array([-2.2, 2.2, -1.8, 1.6])
+        self.box_limit = np.array([-2.4, 2.4, -1.8, 1.6])
         
         # Define theoretical start and goal positions
         self.start_position = np.array([-1.5, -0.7, 0.8])
@@ -37,10 +37,8 @@ class TrajectoryAnimator:
         
         # Define rectangular obstacles [x_min, x_max, y_min, y_max]
         self.obstacles = np.array([
-            [-1.93, -0.89, -0.13, 0.13],
-            [-0.13, 0.13, 0.61, 1.13],
-            [0.87, 1.65, 0, 0.26],
-            [0.50, 0.76, -1.02, -0.50],
+            [-0.90, -0.38, -0.52, -0.26],      # Obs 1: lower-centre
+            [ 0.26,  0.78,  0.26,  0.52],      # Obs 2: upper-right
         ])
         
         # Define danger zones (if provided)
@@ -57,16 +55,16 @@ class TrajectoryAnimator:
         self.time = data[0, :]  # First row: time (s)
         self.x = data[1, :]     # Second row: x position (m)
         self.y = data[2, :]     # Third row: y position (m)
-        self.z = data[3, :]     # Fourth row: z position (m)
+        # self.z = data[3, :]     # Can be z or yaw or anything else depending on your CSV structure 
         
         # Print trajectory information
         print(f"Loaded trajectory with {len(self.time)} data points")
         print(f"Time range: {self.time[0]:.3f}s to {self.time[-1]:.3f}s")
         print(f"Duration: {self.time[-1] - self.time[0]:.3f}s")
         print(f"\nTheoretical start position: {self.start_position}")
-        print(f"Actual start position: [{self.x[0]:.3f}, {self.y[0]:.3f}, {self.z[0]:.3f}]")
+        print(f"Actual start position: [{self.x[0]:.3f}, {self.y[0]:.3f}]")
         print(f"\nTheoretical goal position: {self.goal_position}")
-        print(f"Actual end position: [{self.x[-1]:.3f}, {self.y[-1]:.3f}, {self.z[-1]:.3f}]")
+        print(f"Actual end position: [{self.x[-1]:.3f}, {self.y[-1]:.3f}]")
         
     def setup_plot(self):
         """Setup the matplotlib figure and axes"""
@@ -332,23 +330,23 @@ def main():
     # ===== CONFIGURATION SECTION - EDIT THESE PARAMETERS =====
     
     # Path to your CSV file
-    csv_file = 'traj/out/cf_01_20260209154656(WithErrorIntervention).csv'  # Change this to your CSV file path
+    csv_file = '/Users/yunru/Documents/GitHub/Robotic-Dog-Tracking-Interface/experiment/traj/joint_control_20260422110811.csv'  # Change this to your CSV file path
     
     # Output settings
-    output_file = 'traj/out/cf_01_20260209154656(WithErrorIntervention).mp4'  # Output file (.mp4 or .gif)
+    output_file = '/Users/yunru/Documents/GitHub/Robotic-Dog-Tracking-Interface/experiment/traj/joint_control_gen+bad.mp4'  # Output file (.mp4 or .gif)
     fps = 30                                   # Frames per second
     speed_multiplier = 1.0                     # Animation speed (1.0 = normal, 2.0 = 2x faster)
     use_3d = False                             # Set to True for 3D visualization
     
     # Danger zones [x_min, x_max, y_min, y_max] (set to None to disable)
     # You can add multiple danger zones just like obstacles
-    danger_zones = np.array([
+    # danger_zones = np.array([
         # [-0.5, 0.5, -0.5, 0.5],      # First danger zone
-        [0, 0, 0, 0]
+        # [0, 0, 0, 0]
         # [1.2, 1.8, 0.8, 1.3],       # Uncomment to add more danger zones
-    ])
+    # ])
     # Or set to None if no danger zones needed:
-    # danger_zones = None
+    danger_zones = None
     
     # ===== END OF CONFIGURATION SECTION =====
     

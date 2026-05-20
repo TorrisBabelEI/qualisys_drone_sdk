@@ -19,7 +19,7 @@ import os
 
 from qfly import Pose, QualisysCrazyflie, World, ParallelContexts, utils
 
-import json
+import re
 import numpy as np
 
 # Add utils to path for custom modules
@@ -31,32 +31,34 @@ from flight_utils.visualization import plot_all_results
 from flight_utils.realtime_visualization import RealtimePlot
 
 # SETTINGS
-# List of Crazyflie indices to control
+# QTM host IP
+mocap_ip = "192.168.1.122"
+
+# Drone table: index -> (qtm_body_name, radio_uri_without_dongle, marker_ids)
+# URI format: radio://<dongle>/<channel>/2M/<address>
+# Dongle index is reassigned sequentially (0, 1, 2, ...) based on cf_indices order.
+DRONE_TABLE = {
+    1: ("cf_01", "radio://X/80/2M/E7E7E7E700",  [11, 12, 13, 14]),
+    2: ("cf_02", "radio://X/81/2M/E7E7E7E701",  [21, 22, 23, 24]),
+    3: ("cf_03", "radio://X/82/2M/E7E7E7E702",  [31, 32, 33, 34]),
+    4: ("cf_04", "radio://X/83/2M/E7E7E7E703",  [41, 42, 43, 44]),
+    5: ("cf_05", "radio://X/84/2M/E7E7E7E704",  [51, 52, 53, 54]),
+}
+
+# List of Crazyflie indices to control (must be keys in DRONE_TABLE)
 cf_indices = [1, 2]
 
-# Load configuration for each Crazyflie
-cf_specs_list = []
+# Build per-drone lists, reassigning dongle index sequentially
 cf_body_names = []
 cf_uris = []
 cf_marker_ids_list = []
-mocap_ip = None
 
-for cf_idx in cf_indices:
-    cf_json = f'config_crazyflie_{cf_idx}.json'
-    try:
-        with open(cf_json, 'r') as cfg:
-            cf_specs = json.load(cfg)
-            cf_specs_list.append(cf_specs)
-            cf_body_names.append(cf_specs["NAME_SINGLE_BODY"])
-            cf_uris.append(cf_specs["URI"])
-            # Generate marker IDs based on cf_idx: cf_01 -> [11,12,13,14], cf_02 -> [21,22,23,24], etc.
-            marker_ids = [int(f"{cf_idx}{i}") for i in range(1, 5)]
-            cf_marker_ids_list.append(marker_ids)
-            if mocap_ip is None:
-                mocap_ip = cf_specs["QUALISYS_IP"]
-    except FileNotFoundError:
-        print(f"Config file {cf_json} not found")
-        exit(1)
+for dongle_idx, cf_idx in enumerate(cf_indices):
+    body_name, uri_template, marker_ids = DRONE_TABLE[cf_idx]
+    uri = re.sub(r'radio://X/', f'radio://{dongle_idx}/', uri_template)
+    cf_body_names.append(body_name)
+    cf_uris.append(uri)
+    cf_marker_ids_list.append(marker_ids)
 
 # Trajectory settings (can be customized per drone if needed)
 traj_file_name = ['cf_01_traj_ref.csv',
@@ -65,9 +67,10 @@ flight_time = None  # Total flight time in seconds; None to use longest last tim
 save_flag = False  # Whether to save flight data
 safety_margin = 0.8  # Safety margin for speed check
 
-# Lab limits (x_min, x_max), (y_min, y_max)
+# Lab limits (x_min, x_max), (y_min, y_max), (z_min, z_max)
 lab_xlim = (-2.4, 2.4)
 lab_ylim = (-1.8, 1.6)
+lab_zlim = (0.1, 2.0)  # ceiling height limit
 
 
 # Watch key presses with a global variable
@@ -108,14 +111,17 @@ try:
         print(f"Trajectory loaded: {fname}, {pos_ref.shape[1]} waypoints, duration: {t_ref[-1]:.2f}s")
 
         # Validate trajectory is within lab bounds
-        x_vals, y_vals = pos_ref[0, :], pos_ref[1, :]
+        x_vals, y_vals, z_vals = pos_ref[0, :], pos_ref[1, :], pos_ref[2, :]
         if np.any(x_vals < lab_xlim[0]) or np.any(x_vals > lab_xlim[1]):
             print(f"ERROR: {fname} X values [{x_vals.min():.2f}, {x_vals.max():.2f}] exceed lab limits {lab_xlim}")
             exit(1)
         if np.any(y_vals < lab_ylim[0]) or np.any(y_vals > lab_ylim[1]):
             print(f"ERROR: {fname} Y values [{y_vals.min():.2f}, {y_vals.max():.2f}] exceed lab limits {lab_ylim}")
             exit(1)
-    print(f"All trajectories validated within lab bounds X{lab_xlim}, Y{lab_ylim}")
+        if np.any(z_vals < lab_zlim[0]) or np.any(z_vals > lab_zlim[1]):
+            print(f"ERROR: {fname} Z values [{z_vals.min():.2f}, {z_vals.max():.2f}] exceed lab limits {lab_zlim}")
+            exit(1)
+    print(f"All trajectories validated within lab bounds X{lab_xlim}, Y{lab_ylim}, Z{lab_zlim}")
 
     if flight_time is None:
         flight_time = max(t[-1] for t in t_refs)
