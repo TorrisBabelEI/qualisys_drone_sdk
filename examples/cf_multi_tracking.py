@@ -38,11 +38,11 @@ mocap_ip = "192.168.1.122"
 # URI format: radio://<dongle>/<channel>/2M/<address>
 # Dongle index is reassigned sequentially (0, 1, 2, ...) based on cf_indices order.
 DRONE_TABLE = {
-    1: ("cf_01", "radio://X/80/2M/E7E7E7E700",  [11, 12, 13, 14]),
-    2: ("cf_02", "radio://X/81/2M/E7E7E7E701",  [21, 22, 23, 24]),
-    3: ("cf_03", "radio://X/82/2M/E7E7E7E702",  [31, 32, 33, 34]),
-    4: ("cf_04", "radio://X/83/2M/E7E7E7E703",  [41, 42, 43, 44]),
-    5: ("cf_05", "radio://X/84/2M/E7E7E7E704",  [51, 52, 53, 54]),
+    1: ("cf_01", "radio://X/0/2M/E7E7E7E700",   [11, 12, 13, 14]),
+    2: ("cf_02", "radio://X/10/2M/E7E7E7E701",  [21, 22, 23, 24]),
+    3: ("cf_03", "radio://X/20/2M/E7E7E7E702",  [31, 32, 33, 34]),
+    4: ("cf_04", "radio://X/30/2M/E7E7E7E703",  [41, 42, 43, 44]),
+    5: ("cf_05", "radio://X/40/2M/E7E7E7E704",  [51, 52, 53, 54]),
 }
 
 # List of Crazyflie indices to control (must be keys in DRONE_TABLE)
